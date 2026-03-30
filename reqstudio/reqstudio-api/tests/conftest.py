@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 
 from app.db.base import Base
 from app.modules.auth.models import RefreshToken, Tenant, User  # noqa: F401 — registers models in Base.metadata
+from app.modules.projects.models import Project  # noqa: F401
 from app.db.session import get_db
 from app.main import app
 

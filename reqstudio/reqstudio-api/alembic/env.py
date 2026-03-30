@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 from app.core.config import settings
 from app.db.base import Base
 from app.modules.auth.models import RefreshToken, Tenant, User  # noqa: F401 — registers models with metadata
+from app.modules.projects.models import Project  # noqa: F401
 
 # Alembic Config object
 config = context.config

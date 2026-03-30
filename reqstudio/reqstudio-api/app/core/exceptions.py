@@ -152,3 +152,18 @@ def rate_limit_error() -> GuidedRecoveryError:
         severity=Severity.WARNING,
         status_code=429,
     )
+
+
+def not_found_error(resource: str = "recurso") -> GuidedRecoveryError:
+    """404 genérico para qualquer recurso não encontrado.
+
+    Retorna o mesmo erro para cross-tenant (isolamento: não revela existência).
+    """
+    return GuidedRecoveryError(
+        code=ErrorCode.RESOURCE_NOT_FOUND,
+        message=f"O {resource} solicitado não foi encontrado.",
+        help="Verifique o identificador ou volte à lista para escolher um item válido.",
+        actions=[{"label": "Voltar à lista", "route": "/projects"}],
+        severity=Severity.WARNING,
+        status_code=404,
+    )
