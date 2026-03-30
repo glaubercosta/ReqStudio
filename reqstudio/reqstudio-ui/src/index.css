@@ -1,0 +1,330 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource-variable/geist";
+
+/* ============================================================
+   ReqStudio Design System — Tokens, Tipografia e Tema
+   Fonte: UX Design Specification § Visual Design Foundation
+   ============================================================ */
+
+@custom-variant dark (&:is(.dark *));
+
+/* ============================================================
+   TIPOGRAFIA
+   ============================================================ */
+@theme inline {
+  /* Font stacks */
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  --font-heading: 'Inter', system-ui, sans-serif;
+
+  /* Type Scale (UX Spec § Sistema Tipográfico) */
+  --text-display:  30px;
+  --text-h1:       24px;
+  --text-h2:       20px;
+  --text-h3:       16px;
+  --text-body:     15px;
+  --text-body-sm:  13px;
+  --text-caption:  12px;
+  --text-mono:     14px;
+
+  /* Font weights */
+  --font-weight-normal:    400;
+  --font-weight-medium:    500;
+  --font-weight-semibold:  600;
+  --font-weight-bold:      700;
+
+  /* Line heights */
+  --leading-display:  1.2;
+  --leading-h1:       1.3;
+  --leading-h2:       1.35;
+  --leading-h3:       1.4;
+  --leading-body:     1.6;
+  --leading-body-sm:  1.5;
+  --leading-caption:  1.4;
+  --leading-mono:     1.5;
+
+  /* ============================================================
+     ESPAÇAMENTO — base 4px (UX Spec § Espaçamento e Layout)
+     ============================================================ */
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  24px;
+  --space-6:  32px;
+  --space-8:  48px;
+
+  /* ============================================================
+     BORDER RADIUS (UX Spec § Border Radius)
+     ============================================================ */
+  --radius-sm:   6px;
+  --radius-md:   8px;
+  --radius-lg:   12px;
+  --radius-full: 9999px;
+
+  /* shadcn radius override */
+  --radius: 0.5rem;
+
+  /* ============================================================
+     SOMBRAS (UX Spec § Sombras)
+     ============================================================ */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+
+  /* ============================================================
+     CORES — referência shadcn (mapeadas abaixo em :root)
+     ============================================================ */
+  --color-background:        var(--background);
+  --color-foreground:        var(--foreground);
+  --color-card:              var(--card);
+  --color-card-foreground:   var(--card-foreground);
+  --color-popover:           var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary:           var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary:         var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted:             var(--muted);
+  --color-muted-foreground:  var(--muted-foreground);
+  --color-accent:            var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive:       var(--destructive);
+  --color-border:            var(--border);
+  --color-input:             var(--input);
+  --color-ring:              var(--ring);
+
+  /* ReqStudio custom tokens */
+  --color-rs-primary:        var(--rs-primary);
+  --color-rs-primary-hover:  var(--rs-primary-hover);
+  --color-rs-primary-light:  var(--rs-primary-light);
+  --color-rs-user-message:   var(--rs-user-message);
+  --color-rs-amber:          var(--rs-amber);
+  --color-rs-amber-light:    var(--rs-amber-light);
+  --color-rs-success:        var(--rs-success);
+  --color-rs-warning:        var(--rs-warning);
+  --color-rs-error:          var(--rs-error);
+  --color-rs-info:           var(--rs-info);
+  --color-rs-surface:        var(--rs-surface);
+  --color-rs-text-primary:   var(--rs-text-primary);
+  --color-rs-text-secondary: var(--rs-text-secondary);
+  --color-rs-text-muted:     var(--rs-text-muted);
+
+  /* Sidebar */
+  --color-sidebar-ring:                var(--sidebar-ring);
+  --color-sidebar-border:              var(--sidebar-border);
+  --color-sidebar-accent-foreground:   var(--sidebar-accent-foreground);
+  --color-sidebar-accent:              var(--sidebar-accent);
+  --color-sidebar-primary-foreground:  var(--sidebar-primary-foreground);
+  --color-sidebar-primary:             var(--sidebar-primary);
+  --color-sidebar-foreground:          var(--sidebar-foreground);
+  --color-sidebar:                     var(--sidebar);
+}
+
+/* ============================================================
+   LIGHT MODE — Design Tokens ReqStudio
+   UX Spec § Sistema de Cores
+   ============================================================ */
+:root {
+  /* --- Paleta Primária: Indigo (UX Spec § Paleta Primária) --- */
+  --rs-primary:       hsl(234, 89%, 56%);   /* Botões primários, links */
+  --rs-primary-hover: hsl(234, 89%, 48%);   /* Hover states */
+  --rs-primary-light: hsl(234, 89%, 96%);   /* Backgrounds sutis */
+  --rs-user-message:  hsl(234, 70%, 65%);   /* Mensagens do usuário (não clicável) */
+
+  /* --- Paleta de Acentos: Âmbar (UX Spec § Paleta de Acentos) --- */
+  --rs-amber:       hsl(38, 92%, 50%);      /* Progresso, badges, celebrações */
+  --rs-amber-light: hsl(38, 92%, 95%);      /* Highlight de novidade */
+
+  /* --- Paleta Semântica (UX Spec § Paleta Semântica) --- */
+  --rs-success: hsl(152, 69%, 41%);         /* Cobertura completa, confirmações */
+  --rs-warning: hsl(38, 92%, 45%);          /* Pontos de Discussão */
+  --rs-error:   hsl(0, 72%, 58%);           /* Erros, estados críticos */
+  --rs-info:    hsl(234, 60%, 65%);         /* Citation badges, tooltips */
+
+  /* --- Neutros Warm Gray (UX Spec § Paleta de Neutros) --- */
+  --rs-surface:        hsl(0, 0%, 100%);         /* Cards, painéis */
+  --rs-text-primary:   hsl(224, 71%, 13%);       /* Texto principal */
+  --rs-text-secondary: hsl(220, 9%, 46%);        /* Labels, texto auxiliar */
+  --rs-text-muted:     hsl(220, 9%, 63%);        /* Placeholder, timestamps */
+
+  /* --- shadcn tokens mapeados para a paleta ReqStudio --- */
+  --background:         hsl(220, 14%, 98%);
+  --foreground:         hsl(224, 71%, 13%);
+  --card:               hsl(0, 0%, 100%);
+  --card-foreground:    hsl(224, 71%, 13%);
+  --popover:            hsl(0, 0%, 100%);
+  --popover-foreground: hsl(224, 71%, 13%);
+  --primary:            hsl(234, 89%, 56%);
+  --primary-foreground: hsl(0, 0%, 100%);
+  --secondary:          hsl(220, 14%, 95%);
+  --secondary-foreground: hsl(224, 71%, 13%);
+  --muted:              hsl(220, 14%, 95%);
+  --muted-foreground:   hsl(220, 9%, 46%);
+  --accent:             hsl(38, 92%, 50%);
+  --accent-foreground:  hsl(0, 0%, 100%);
+  --destructive:        hsl(0, 72%, 58%);
+  --border:             hsl(220, 13%, 91%);
+  --input:              hsl(220, 13%, 91%);
+  --ring:               hsl(234, 89%, 56%);
+
+  /* Sidebar */
+  --sidebar:                    hsl(220, 14%, 96%);
+  --sidebar-foreground:         hsl(224, 71%, 13%);
+  --sidebar-primary:            hsl(234, 89%, 56%);
+  --sidebar-primary-foreground: hsl(0, 0%, 100%);
+  --sidebar-accent:             hsl(220, 14%, 91%);
+  --sidebar-accent-foreground:  hsl(224, 71%, 13%);
+  --sidebar-border:             hsl(220, 13%, 91%);
+  --sidebar-ring:               hsl(234, 89%, 56%);
+}
+
+/* ============================================================
+   DARK MODE (UX Spec § Dark Mode)
+   Aplicado via classe .dark no elemento <html>
+   ============================================================ */
+.dark {
+  /* --- Neutros Dark --- */
+  --background:         hsl(224, 30%, 10%);
+  --foreground:         hsl(220, 14%, 96%);
+  --card:               hsl(224, 25%, 14%);
+  --card-foreground:    hsl(220, 14%, 96%);
+  --popover:            hsl(224, 25%, 14%);
+  --popover-foreground: hsl(220, 14%, 96%);
+
+  /* --- Primária: indigo satura mantém, ajusta luminosidade --- */
+  --primary:            hsl(234, 89%, 65%);
+  --primary-foreground: hsl(224, 30%, 8%);
+
+  /* --- Secondary / muted escuros --- */
+  --secondary:          hsl(224, 20%, 20%);
+  --secondary-foreground: hsl(220, 14%, 90%);
+  --muted:              hsl(224, 20%, 18%);
+  --muted-foreground:   hsl(220, 9%, 55%);
+
+  /* --- Accent âmbar --- */
+  --accent:             hsl(38, 92%, 55%);
+  --accent-foreground:  hsl(224, 30%, 8%);
+
+  /* --- Feedback --- */
+  --destructive:        hsl(0, 72%, 63%);
+  --border:             hsl(224, 20%, 22%);
+  --input:              hsl(224, 20%, 22%);
+  --ring:               hsl(234, 89%, 65%);
+
+  /* --- ReqStudio custom tokens dark --- */
+  --rs-primary:       hsl(234, 89%, 65%);
+  --rs-primary-hover: hsl(234, 89%, 72%);
+  --rs-primary-light: hsl(234, 40%, 18%);
+  --rs-user-message:  hsl(234, 60%, 70%);
+  --rs-amber:         hsl(38, 92%, 55%);
+  --rs-amber-light:   hsl(38, 40%, 18%);
+  --rs-success:       hsl(152, 60%, 48%);
+  --rs-warning:       hsl(38, 92%, 55%);
+  --rs-error:         hsl(0, 72%, 63%);
+  --rs-info:          hsl(234, 60%, 70%);
+  --rs-surface:       hsl(224, 25%, 14%);
+  --rs-text-primary:  hsl(220, 14%, 96%);
+  --rs-text-secondary: hsl(220, 9%, 65%);
+  --rs-text-muted:    hsl(220, 9%, 48%);
+
+  /* Sidebar dark */
+  --sidebar:                    hsl(224, 25%, 12%);
+  --sidebar-foreground:         hsl(220, 14%, 90%);
+  --sidebar-primary:            hsl(234, 89%, 65%);
+  --sidebar-primary-foreground: hsl(224, 30%, 8%);
+  --sidebar-accent:             hsl(224, 20%, 20%);
+  --sidebar-accent-foreground:  hsl(220, 14%, 90%);
+  --sidebar-border:             hsl(224, 20%, 22%);
+  --sidebar-ring:               hsl(234, 89%, 65%);
+}
+
+/* ============================================================
+   BASE STYLES
+   ============================================================ */
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  html {
+    @apply font-sans antialiased;
+    font-size: 16px;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-sans);
+    font-size: var(--text-body);
+    line-height: var(--leading-body);
+    min-height: 100svh;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Type scale utilities */
+  .text-display {
+    font-size: var(--text-display);
+    font-weight: var(--font-weight-bold);
+    line-height: var(--leading-display);
+  }
+
+  h1, .text-h1 {
+    font-size: var(--text-h1);
+    font-weight: var(--font-weight-semibold);
+    line-height: var(--leading-h1);
+  }
+
+  h2, .text-h2 {
+    font-size: var(--text-h2);
+    font-weight: var(--font-weight-semibold);
+    line-height: var(--leading-h2);
+  }
+
+  h3, .text-h3 {
+    font-size: var(--text-h3);
+    font-weight: var(--font-weight-semibold);
+    line-height: var(--leading-h3);
+  }
+
+  p, .text-body {
+    font-size: var(--text-body);
+    font-weight: var(--font-weight-normal);
+    line-height: var(--leading-body);
+  }
+
+  .text-body-sm {
+    font-size: var(--text-body-sm);
+    font-weight: var(--font-weight-normal);
+    line-height: var(--leading-body-sm);
+  }
+
+  .text-caption {
+    font-size: var(--text-caption);
+    font-weight: var(--font-weight-medium);
+    line-height: var(--leading-caption);
+  }
+
+  code, pre, .text-mono {
+    font-family: var(--font-mono);
+    font-size: var(--text-mono);
+    line-height: var(--leading-mono);
+  }
+
+  /* Focus ring acessível (NFR18) */
+  :focus-visible {
+    outline: 2px solid var(--rs-primary);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+  }
+
+  /* Touch targets mínimos mobile (NFR16) */
+  button, [role="button"], a {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
