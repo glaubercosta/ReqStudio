@@ -1,0 +1,41 @@
+services:
+  api:
+    build: ./reqstudio-api
+    ports:
+      - "${API_PORT:-8000}:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file: .env
+    volumes:
+      - ./reqstudio-api:/app
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    working_dir: /app
+
+  db:
+    image: postgres:16
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-reqstudio}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-reqstudio}
+      POSTGRES_DB: ${POSTGRES_DB:-reqstudio}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-reqstudio}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  frontend:
+    build: ./reqstudio-ui
+    ports:
+      - "${FRONTEND_PORT:-5173}:80"
+    depends_on:
+      - api
+    environment:
+      - VITE_API_URL=http://localhost:${API_PORT:-8000}
+
+volumes:
+  pgdata:
