@@ -10,7 +10,8 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
-from app.db.base import Base  # noqa: F401 — imports all models via base.py
+from app.db.base import Base
+from app.modules.auth.models import RefreshToken, Tenant, User  # noqa: F401 — registers models in Base.metadata
 from app.db.session import get_db
 from app.main import app
 

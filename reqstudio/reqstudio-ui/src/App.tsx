@@ -1,34 +1,46 @@
-import { Suspense, lazy } from 'react'
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { lazy, Suspense } from 'react'
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { ThemeProvider } from '@/contexts/ThemeContext'
+import { AuthProvider } from '@/contexts/AuthContext'
+import { ProtectedRoute } from '@/components/ProtectedRoute'
 
-// Lazy load pages for better performance
-const Home = lazy(() => import('@/pages/Home'))
-const LoginPage = lazy(() => import('@/pages/LoginPage'))
+// Lazy load para code-splitting automático
+const Home        = lazy(() => import('@/pages/Home'))
+const LoginPage   = lazy(() => import('@/pages/LoginPage'))
+const ProjectsPage = lazy(() => import('@/pages/ProjectsPage'))
 
 const PageLoader = () => (
   <div className="flex min-h-screen items-center justify-center bg-background">
-    <div className="flex flex-col items-center gap-4">
-      <div className="h-8 w-8 rounded-full border-4 border-primary border-t-transparent animate-spin" />
-      <p className="text-body-sm text-muted-foreground">Carregando...</p>
-    </div>
+    <div
+      className="w-8 h-8 rounded-full border-2 animate-spin"
+      style={{ borderColor: 'var(--rs-primary)', borderTopColor: 'transparent' }}
+    />
   </div>
 )
 
-function App() {
+export default function App() {
   return (
     <ThemeProvider>
-      <BrowserRouter>
-        <Suspense fallback={<PageLoader />}>
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/register" element={<LoginPage />} />
-          </Routes>
-        </Suspense>
-      </BrowserRouter>
+      <AuthProvider>
+        <BrowserRouter>
+          <Suspense fallback={<PageLoader />}>
+            <Routes>
+              {/* Públicas */}
+              <Route path="/"        element={<Home />} />
+              <Route path="/login"   element={<LoginPage />} />
+              <Route path="/register" element={<LoginPage />} />
+
+              {/* Protegidas — requer autenticação */}
+              <Route element={<ProtectedRoute />}>
+                <Route path="/projects" element={<ProjectsPage />} />
+              </Route>
+
+              {/* Fallback */}
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </Suspense>
+        </BrowserRouter>
+      </AuthProvider>
     </ThemeProvider>
   )
 }
-
-export default App

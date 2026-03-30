@@ -4,7 +4,6 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 class Base(DeclarativeBase):
     """Base class for all SQLAlchemy models."""
-
     pass
 
 
@@ -12,7 +11,7 @@ class TenantMixin:
     """Mixin that adds tenant_id to all business models.
 
     Every query MUST filter by tenant_id.
-    Tested via multi-tenant fixture in conftest.py.
+    Use TenantScope (app/db/tenant.py) to enforce this automatically.
     """
 
     tenant_id: Mapped[str] = mapped_column(
@@ -21,7 +20,7 @@ class TenantMixin:
         index=True,
     )
 
-
-# Import all models here so Alembic can discover them via Base.metadata
-# noqa: E402 — imports after class definitions are intentional
-from app.modules.auth.models import RefreshToken, Tenant, User  # noqa: F401, E402
+# NOTE: models are NOT imported here to avoid circular imports.
+# Import them explicitly wherever metadata discovery is needed:
+#   - tests/conftest.py
+#   - alembic/env.py

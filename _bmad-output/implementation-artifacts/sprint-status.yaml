@@ -56,12 +56,12 @@ development_status:
   # ═══════════════════════════════════════════════════
   # Epic 2: Identidade, Acesso e Isolamento de Dados
   # ═══════════════════════════════════════════════════
-  epic-2: in-progress
+  epic-2: done
   2-1-registro-usuario-email-senha: done
   2-2-login-emissao-tokens-jwt: done
   2-3-refresh-token-rotation-protecao-reuso: done
   2-4-tenantmixin-isolamento-dados-banco: done
-  2-5-tela-login-registro-frontend: backlog
+  2-5-tela-login-registro-frontend: done
   epic-2-retrospective: optional
 
   # ═══════════════════════════════════════════════════

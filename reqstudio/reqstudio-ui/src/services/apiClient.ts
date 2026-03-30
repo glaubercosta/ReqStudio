@@ -1,11 +1,16 @@
 /**
- * API client base configurado para o backend ReqStudio.
- * Base URL lida da variável de ambiente Vite.
+ * API client com interceptor de 401 e auto-refresh (Story 2.5).
+ *
+ * Fluxo de 401:
+ *   1. Request falha com 401
+ *   2. Se não for /refresh, tenta POST /auth/refresh
+ *   3. Se refresh ok → retry com novo access_token
+ *   4. Se refresh falhar → dispara evento 'auth:logout' → redirect /login
  */
 
 const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8001'
 
-interface ApiError {
+export interface ApiError {
   code: string
   message: string
   help: string
@@ -15,28 +20,78 @@ interface ApiError {
 
 export class ReqStudioApiError extends Error {
   error: ApiError
-  constructor(error: ApiError) {
+  statusCode: number
+  constructor(error: ApiError, statusCode: number) {
     super(error.message)
     this.error = error
+    this.statusCode = statusCode
   }
 }
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, {
-    ...init,
-    credentials: 'include', // envia cookies (refresh_token)
-    headers: {
-      'Content-Type': 'application/json',
-      ...init?.headers,
-    },
+// Evento global para logout forçado (escutado pelo AuthContext)
+export const AUTH_LOGOUT_EVENT = 'auth:logout'
+
+let _accessToken: string | null = null
+
+export function setAccessToken(token: string | null) {
+  _accessToken = token
+}
+
+export function getAccessToken(): string | null {
+  return _accessToken
+}
+
+async function refreshAccessToken(): Promise<string | null> {
+  const res = await fetch(`${API_BASE}/api/v1/auth/refresh`, {
+    method: 'POST',
+    credentials: 'include',
   })
-
+  if (!res.ok) return null
   const body = await res.json()
+  const token = body?.data?.access_token ?? null
+  if (token) setAccessToken(token)
+  return token
+}
 
-  if (!res.ok) {
-    throw new ReqStudioApiError(body.error)
+async function request<T>(
+  path: string,
+  init?: RequestInit,
+  isRetry = false,
+): Promise<T> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(init?.headers as Record<string, string> | undefined),
   }
 
+  if (_accessToken) {
+    headers['Authorization'] = `Bearer ${_accessToken}`
+  }
+
+  const res = await fetch(`${API_BASE}${path}`, {
+    ...init,
+    credentials: 'include',
+    headers,
+  })
+
+  // 401 → tenta refresh (apenas uma vez, não para o próprio endpoint de refresh)
+  if (res.status === 401 && !isRetry && !path.includes('/refresh')) {
+    const newToken = await refreshAccessToken()
+    if (newToken) {
+      return request<T>(path, init, true)
+    }
+    // Refresh falhou → força logout global
+    window.dispatchEvent(new CustomEvent(AUTH_LOGOUT_EVENT))
+    const body = await res.json().catch(() => ({}))
+    throw new ReqStudioApiError(
+      body.error ?? { code: 'SESSION_EXPIRED', message: 'Sessão expirada.' },
+      401,
+    )
+  }
+
+  const body = await res.json()
+  if (!res.ok) {
+    throw new ReqStudioApiError(body.error, res.status)
+  }
   return body
 }
 
@@ -51,9 +106,9 @@ export interface UserData {
   tenant_id: string
 }
 
-export interface AuthResponse { data: { access_token: string; token_type: string } }
-export interface RegisterResponse { data: UserData }
-export interface MeResponse { data: UserData }
+export interface AuthTokenResponse { data: { access_token: string; token_type: string } }
+export interface RegisterResponse  { data: UserData }
+export interface MeResponse        { data: UserData }
 
 export const authApi = {
   register: (payload: RegisterPayload) =>
@@ -63,13 +118,19 @@ export const authApi = {
     }),
 
   login: (payload: LoginPayload) =>
-    request<AuthResponse>('/api/v1/auth/login', {
+    request<AuthTokenResponse>('/api/v1/auth/login', {
       method: 'POST',
       body: JSON.stringify(payload),
     }),
 
-  me: (token: string) =>
-    request<MeResponse>('/api/v1/auth/me', {
-      headers: { Authorization: `Bearer ${token}` },
-    }),
+  refresh: () =>
+    request<AuthTokenResponse>('/api/v1/auth/refresh', { method: 'POST' }),
+
+  me: () => request<MeResponse>('/api/v1/auth/me'),
+
+  logout: () =>
+    fetch(`${API_BASE}/api/v1/auth/logout`, {
+      method: 'POST',
+      credentials: 'include',
+    }).catch(() => null), // silencia erros de logout
 }

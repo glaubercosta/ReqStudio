@@ -192,6 +192,36 @@ A story de CI/CD deve ser criada e adicionada ao backlog antes do início do Epi
 
 
 
+## Lição 8 — Migrations Alembic: Diferença entre Ambiente de Teste e Produção
+
+**Sprint / Story:** Story 2.3 (RefreshToken model)
+**Severidade:** Alta (bloqueou o uso da funcionalidade em produção)
+
+### O que aconteceu
+O modelo `RefreshToken` foi criado e testado com sucesso (41/41 testes passando), mas ao usar o frontend integrado à API em PostgreSQL, o endpoint `/register` retornou **500 Internal Server Error** com erro CORS. A causa real era que a tabela `refresh_tokens` não existia no PostgreSQL — apenas no SQLite em memória dos testes.
+
+### Causa raiz
+Os testes usam `Base.metadata.create_all()` — que cria todas as tabelas automaticamente. O PostgreSQL de produção depende de **Alembic migrations** explícitas. Ao adicionar o modelo `RefreshToken`, a migration correspondente não foi gerada nem aplicada.
+
+### Regra de ouro (para o agente)
+> **Toda nova model = nova migration Alembic.** Após criar um modelo, gerar e aplicar a migration é tão obrigatório quanto escrever os testes.
+
+### Checklist de conclusão de story com nova model
+1. `[ ]` Model criado e testado
+2. `[ ]` `alembic revision --autogenerate -m "feat: <descrição>"` executado
+3. `[ ]` Migration revisada (verificar que não destruiu tabelas existentes)
+4. `[ ]` `alembic upgrade head` aplicado no ambiente de staging/produção
+5. `[ ]` Verificado via `alembic current` que a migração foi aplicada
+
+### Solução aplicada
+```bash
+docker compose exec api alembic revision --autogenerate -m "feat: add refresh_tokens table (Story 2.3)"
+docker compose exec api alembic upgrade head
+docker compose restart api
+```
+
+---
+
 1. **Compatibilidade com BMAD original:** Como adicionar verificações de infraestrutura sem quebrar o contrato do workflow upstream?
 2. **Scripts de setup como entregável:** Tornar scripts de setup um entregável obrigatório para stories de inicialização de serviços?
 3. **Instruções para o usuário:** O agente deve agrupar todos os comandos do usuário em uma única mensagem no início da story?
