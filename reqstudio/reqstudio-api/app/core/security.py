@@ -2,13 +2,17 @@
 
 bcrypt: hashing direto (sem passlib — incompatível com bcrypt 4.x).
 JWT: python-jose com algoritmo HS256.
+jti (JWT ID): UUID adicionado ao refresh token para garantir unicidade
+              mesmo quando dois tokens são criados no mesmo segundo.
 """
 
 from datetime import datetime, timedelta, timezone
+from hashlib import sha256
 from typing import Any
+from uuid import uuid4
 
 import bcrypt
-from jose import JWTError, jwt
+from jose import jwt
 
 from app.core.config import settings
 
@@ -26,6 +30,14 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
         plain_password.encode("utf-8"),
         hashed_password.encode("utf-8"),
     )
+
+
+def hash_token(token: str) -> str:
+    """Retorna SHA-256 hex do token — para armazenamento seguro no banco.
+
+    Nunca armazene o token bruto. Armazene apenas o hash.
+    """
+    return sha256(token.encode("utf-8")).hexdigest()
 
 
 # ── JWT ───────────────────────────────────────────────────────────────────────
@@ -53,13 +65,17 @@ def create_access_token(user_id: str, tenant_id: str) -> str:
 
 
 def create_refresh_token(user_id: str) -> str:
-    """Cria refresh token JWT com sub=user_id.
+    """Cria refresh token JWT com sub=user_id e jti único.
 
+    jti (JWT ID) é um UUID que garante unicidade mesmo criado no mesmo segundo.
     Expira em REFRESH_TOKEN_EXPIRE_DAYS (default: 7d).
-    Rotation e reuse detection implementados na Story 2.3.
     """
     return _make_token(
-        extra_claims={"sub": user_id, "type": "refresh"},
+        extra_claims={
+            "sub": user_id,
+            "type": "refresh",
+            "jti": str(uuid4()),  # garante hash único mesmo criado no mesmo instante
+        },
         expires_delta=timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS),
     )
 

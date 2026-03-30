@@ -58,8 +58,8 @@ development_status:
   # ═══════════════════════════════════════════════════
   epic-2: in-progress
   2-1-registro-usuario-email-senha: done
-  2-2-login-emissao-tokens-jwt: review
-  2-3-refresh-token-rotation-protecao-reuso: backlog
+  2-2-login-emissao-tokens-jwt: done
+  2-3-refresh-token-rotation-protecao-reuso: done
   2-4-tenantmixin-isolamento-dados-banco: backlog
   2-5-tela-login-registro-frontend: backlog
   epic-2-retrospective: optional

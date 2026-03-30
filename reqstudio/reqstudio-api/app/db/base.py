@@ -24,4 +24,4 @@ class TenantMixin:
 
 # Import all models here so Alembic can discover them via Base.metadata
 # noqa: E402 — imports after class definitions are intentional
-from app.modules.auth.models import Tenant, User  # noqa: F401, E402
+from app.modules.auth.models import RefreshToken, Tenant, User  # noqa: F401, E402

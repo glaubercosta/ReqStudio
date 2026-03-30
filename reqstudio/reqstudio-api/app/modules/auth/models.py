@@ -1,13 +1,12 @@
-"""Auth domain models: User e Tenant.
+"""Auth domain models: User, Tenant, RefreshToken.
 
-Tenant é criado automaticamente no registro de usuário (Story 2.1).
-RefreshToken será adicionado na Story 2.3.
+RefreshToken adicionado na Story 2.3 (rotation + reuse detection).
 """
 
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import DateTime, String, ForeignKey
+from sqlalchemy import DateTime, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -18,11 +17,12 @@ def _uuid() -> str:
 
 
 def _now() -> datetime:
-    return datetime.now(timezone.utc)
+    """UTC now como naive datetime (compatível com SQLite em testes)."""
+    return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
 class Tenant(Base):
-    """Tenant — unidade de isolamento de dados (organização/conta)."""
+    """Tenant — unidade de isolamento de dados."""
 
     __tablename__ = "tenants"
 
@@ -32,16 +32,11 @@ class Tenant(Base):
         DateTime(timezone=True), nullable=False, default=_now
     )
 
-    # Relacionamento (não carregado por padrão)
     users: Mapped[list["User"]] = relationship("User", back_populates="tenant")
 
 
 class User(Base):
-    """User — conta de acesso ao ReqStudio.
-
-    tenant_id referencia Tenant. Toda query de negócio filtra por tenant_id.
-    Senha nunca armazenada em texto plano — apenas hashed_password (bcrypt).
-    """
+    """User — conta de acesso ao ReqStudio."""
 
     __tablename__ = "users"
 
@@ -57,3 +52,50 @@ class User(Base):
     is_active: Mapped[bool] = mapped_column(default=True, nullable=False)
 
     tenant: Mapped["Tenant"] = relationship("Tenant", back_populates="users")
+    refresh_tokens: Mapped[list["RefreshToken"]] = relationship(
+        "RefreshToken", back_populates="user", cascade="all, delete-orphan"
+    )
+
+
+class RefreshToken(Base):
+    """RefreshToken — registro stateful de refresh tokens (Story 2.3).
+
+    Armazena apenas o SHA-256 hash do token, nunca o token bruto.
+
+    Lifecycle:
+        - Criado no login e no refresh (rotation)
+        - used_at preenchido quando token é consumido no refresh
+        - revoked_at preenchido quando token é revogado (reuse detection)
+        - Reuse detection: se used_at já está preenchido → compromisso de segurança
+          → revoga TODOS os tokens do user
+    """
+
+    __tablename__ = "refresh_tokens"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    user_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("users.id"), nullable=False, index=True
+    )
+    token_hash: Mapped[str] = mapped_column(String(64), nullable=False, unique=True, index=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=_now
+    )
+    used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    user: Mapped["User"] = relationship("User", back_populates="refresh_tokens")
+
+    @property
+    def is_valid(self) -> bool:
+        """True se token não foi usado, não foi revogado e não expirou."""
+        # Usa naive UTC para compatibilidade com SQLite (testes) e PostgreSQL (produção)
+        now = datetime.now(timezone.utc).replace(tzinfo=None)
+        expires = self.expires_at
+        if expires.tzinfo is not None:
+            expires = expires.replace(tzinfo=None)
+        return (
+            self.used_at is None
+            and self.revoked_at is None
+            and expires > now
+        )
