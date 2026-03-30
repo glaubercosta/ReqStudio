@@ -14,7 +14,11 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     // Check localStorage first, then system preference
     const stored = localStorage.getItem('reqstudio-theme') as Theme | null
     if (stored === 'light' || stored === 'dark') return stored
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+    // matchMedia pode não existir em jsdom/SSR — fallback para light
+    const prefersDark =
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(prefers-color-scheme: dark)').matches
+    return prefersDark ? 'dark' : 'light'
   })
 
   useEffect(() => {

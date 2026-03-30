@@ -21,11 +21,12 @@ const ProjectsPage      = lazy(() => import('@/pages/ProjectsPage'))
 const ProjectDetailPage = lazy(() => import('@/pages/ProjectDetailPage'))
 
 const PageLoader = () => (
-  <div className="flex min-h-screen items-center justify-center bg-background">
+  <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-background" aria-label="Carregando">
     <div
       className="w-8 h-8 rounded-full border-2 animate-spin"
       style={{ borderColor: 'var(--rs-primary)', borderTopColor: 'transparent' }}
     />
+    <span className="text-body-sm text-muted-foreground">Carregando...</span>
   </div>
 )
 

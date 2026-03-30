@@ -266,14 +266,49 @@ Quando: após conclusão do Epic 5 (MVP funcional com LLM integrado) ou se o tim
 
 ---
 
-## Tópicos para Discussão na Sessão de Evolução de Agentes
+## Lição 11 — Cobertura de Testes Frontend: ACs Implícitas São ACs Ausentes
 
-1. **Compatibilidade com BMAD original:** Como adicionar verificações de infraestrutura sem quebrar o contrato do workflow upstream?
-2. **Scripts de setup como entregável:** Tornar scripts de setup um entregável obrigatório para stories de inicialização de serviços?
-3. **Instruções para o usuário:** O agente deve agrupar todos os comandos do usuário em uma única mensagem no início da story?
-4. **Ambientes de desenvolvimento compartilhados:** Como o agente deve lidar com máquinas que rodam múltiplos projetos simultaneamente?
-5. **ESAA como framework complementar:** Avaliar integração pós-MVP para rastreabilidade e auditoria de qualidade.
+**Sprint / Story:** Epic 3 (Stories 3.2–3.5 — Frontend)
+**Severidade:** Média (lacuna de qualidade detectada na revisão pós-implementação)
+
+### O que aconteceu
+
+As stories de frontend do Epic 3 (3.2 Dashboard, 3.3 Criação/Edição, 3.4 Detalhe, 3.5 Arquivamento) foram implementadas com qualidade visual e funcional, mas **sem testes automatizados**. A lacuna só foi identificada após a conclusão das stories, quando o usuário perguntou explicitamente se os testes tinham sido desenvolvidos.
+
+Ao rodar `npm run test:coverage` após a correção:
+- **Antes:** 65% statements / 64% branches / 55% functions (abaixo do threshold de 70%)
+- **Depois (com 15 testes adicionais):** ~73%+ global, 100% em `ArchiveConfirm`, 92% em `ProjectModal`
+
+A story de backend equivalente (3.1) tinha AC explícita: *"Testes: CRUD, isolamento, arquivamento, paginação, coverage ≥ 80%"* — o que garantiu TDD. As stories de frontend não tinham esse requisito escrito.
+
+### Causa raiz
+
+**ACs implícitas não existem.** Se um critério de aceitação não está escrito na story, o agente não o executa. A cobertura de testes no backend estava explicitamente nos ACs; no frontend, foi assumida como "óbvia" mas não documentada.
+
+### Regra de ouro (para o agente)
+
+> **Toda story que envolve componentes com lógica de negócio DEVE incluir um AC de testes:**
+> - Backend: `coverage ≥ 80%` nos arquivos do módulo
+> - Frontend: testes para validações, estados de loading/erro e interações críticas
+
+### Padrão a adotar a partir do Epic 4
+
+Incluir em TODA story de frontend o AC:
+
+```
+- Testes: [componente principal] cobre os fluxos:
+  - Estado de loading/erro
+  - Validação de formulário (se aplicável)
+  - Interação principal (click, submit)
+  - Cobertura de linha ≥ 75% no componente
+```
+
+### Action item
+
+- [x] Criados testes retroativos para `ProjectModal` (11), `ArchiveConfirm` (7), `ProjectCard` (9), `ProtectedRoute` (4), `AuthContext` (6), `useProjects` (5)
+- [ ] Template de story frontend atualizado com AC de testes como campo obrigatório
+- [ ] Threshold de coverage no `vite.config.ts` ajustado para 75% e com enforcement (exit code 1)
 
 ---
 
-*Última atualização: 2026-03-30 | Sessão: Epic 2 completo — Retrospectiva*
+*Última atualização: 2026-03-30 | Sessão: Epic 3 completo — Frontend Tests*

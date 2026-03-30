@@ -17,4 +17,19 @@ export default defineConfig({
     port: 5175,
     strictPort: false, // auto-incrementa se 5175 estiver ocupada
   },
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: ['./src/test/setup.ts'],
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+    },
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'lcov'],
+      include: ['src/components/**', 'src/hooks/**', 'src/pages/**'],
+      exclude: ['src/test/**'],
+      thresholds: { lines: 70, functions: 70 },
+    },
+  },
 })
