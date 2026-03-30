@@ -62,3 +62,33 @@ async def client(db_session: AsyncSession) -> AsyncClient:
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
     app.dependency_overrides.clear()
+
+
+# ── Multi-tenant fixtures (Story 2.4) ─────────────────────────────────────────
+
+_USER_A = {"email": "tenant_a@example.com", "password": "senhaA1234"}
+_USER_B = {"email": "tenant_b@example.com", "password": "senhaB1234"}
+
+
+@pytest.fixture
+async def tenant_a_token(client: AsyncClient) -> dict[str, str]:
+    """Registra usuário A e retorna {'access_token': ..., 'tenant_id': ...}."""
+    reg = await client.post("/api/v1/auth/register", json=_USER_A)
+    assert reg.status_code == 201, f"Register A failed: {reg.text}"
+    tenant_id = reg.json()["data"]["tenant_id"]
+
+    login = await client.post("/api/v1/auth/login", json=_USER_A)
+    assert login.status_code == 200, f"Login A failed: {login.text}"
+    return {"access_token": login.json()["data"]["access_token"], "tenant_id": tenant_id}
+
+
+@pytest.fixture
+async def tenant_b_token(client: AsyncClient) -> dict[str, str]:
+    """Registra usuário B e retorna {'access_token': ..., 'tenant_id': ...}."""
+    reg = await client.post("/api/v1/auth/register", json=_USER_B)
+    assert reg.status_code == 201, f"Register B failed: {reg.text}"
+    tenant_id = reg.json()["data"]["tenant_id"]
+
+    login = await client.post("/api/v1/auth/login", json=_USER_B)
+    assert login.status_code == 200, f"Login B failed: {login.text}"
+    return {"access_token": login.json()["data"]["access_token"], "tenant_id": tenant_id}
