@@ -1,8 +1,18 @@
 import { lazy, Suspense } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ThemeProvider } from '@/contexts/ThemeContext'
 import { AuthProvider } from '@/contexts/AuthContext'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: true,
+    },
+  },
+})
 
 // Lazy load para code-splitting automático
 const Home        = lazy(() => import('@/pages/Home'))
@@ -20,27 +30,31 @@ const PageLoader = () => (
 
 export default function App() {
   return (
-    <ThemeProvider>
-      <AuthProvider>
-        <BrowserRouter>
-          <Suspense fallback={<PageLoader />}>
-            <Routes>
-              {/* Públicas */}
-              <Route path="/"        element={<Home />} />
-              <Route path="/login"   element={<LoginPage />} />
-              <Route path="/register" element={<LoginPage />} />
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider>
+        <AuthProvider>
+          <BrowserRouter>
+            <Suspense fallback={<PageLoader />}>
+              <Routes>
+                {/* Públicas */}
+                <Route path="/"         element={<Home />} />
+                <Route path="/login"    element={<LoginPage />} />
+                <Route path="/register" element={<LoginPage />} />
 
-              {/* Protegidas — requer autenticação */}
-              <Route element={<ProtectedRoute />}>
-                <Route path="/projects" element={<ProjectsPage />} />
-              </Route>
+                {/* Protegidas — requer autenticação */}
+                <Route element={<ProtectedRoute />}>
+                  <Route path="/projects"        element={<ProjectsPage />} />
+                  <Route path="/projects/new"    element={<ProjectsPage />} />
+                  <Route path="/projects/:id"    element={<ProjectsPage />} />
+                </Route>
 
-              {/* Fallback */}
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </Suspense>
-        </BrowserRouter>
-      </AuthProvider>
-    </ThemeProvider>
+                {/* Fallback */}
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </Suspense>
+          </BrowserRouter>
+        </AuthProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
   )
 }
