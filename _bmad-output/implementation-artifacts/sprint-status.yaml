@@ -62,7 +62,7 @@ development_status:
   2-3-refresh-token-rotation-protecao-reuso: done
   2-4-tenantmixin-isolamento-dados-banco: done
   2-5-tela-login-registro-frontend: done
-  epic-2-retrospective: optional
+  epic-2-retrospective: done
 
   # ═══════════════════════════════════════════════════
   # Epic 3: Projetos como Espaços de Trabalho

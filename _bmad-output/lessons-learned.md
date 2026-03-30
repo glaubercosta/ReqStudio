@@ -222,11 +222,58 @@ docker compose restart api
 
 ---
 
+## Lição 9 — Circular Import e Validação do Build Docker no CI
+
+**Sprint / Story:** Story 2.3 (RefreshToken model) / Epic 2 Retrospectiva
+**Severidade:** Alta (bloqueou a API em produção; não foi detectado pelos testes)
+
+### O que aconteceu
+Ao adicionar `RefreshToken` em `models.py`, a importação foi feita também em `base.py` por conveniência. Isso criou um ciclo: `models.py → base.py → models.py`. O problema só apareceu quando o container Docker tentou inicializar a API — os testes (SQLite em memória) passavam normalmente.
+
+### Causa raiz
+Duas falhas combinadas:
+1. **Violação de regra de arquitetura:** a relação de dependência entre `models` e `base` deve ser **unidirecional** — models importam de base, nunca o contrário. Isso é regra fundamental do SQLAlchemy e foi violada por conveniência.
+2. **CI não valida o build Docker:** o pipeline de CI executa `pytest` mas não faz `docker build` + `docker run` como gate obrigatório. Um circular import que impede o boot da API não é detectável apenas com pytest.
+
+### Regra de ouro (para o agente)
+> **Models importam de `base.py`, nunca o contrário.** A importação de models para Alembic/testes deve ser feita nos arquivos consumidores (`env.py`, `conftest.py`), nunca em `base.py`.
+
+### Action item para Epic 3
+- [ ] Adicionar step `docker build` + `docker run --rm api pytest tests/ -v` no `ci.yml` como gate obrigatório
+- [ ] Incluir `docker compose up -d && docker compose exec api alembic upgrade head` no healthcheck de staging
+
+---
+
+## Lição 10 — Framework ESAA: Consideração para Pós-MVP
+
+**Sprint / Story:** Epic 2 Retrospectiva (insight estratégico de Glauber Costa)
+**Categoria:** Decisão estratégica de tooling — registrado para revisão pós-MVP
+
+### Contexto
+Glauber Costa possui experiência direta com o framework **ESAA (Event Sourced Agent Architecture)** e sua metodologia de geração de código. A abordagem do ESAA — com contratos de agente, fluxo `claim → complete → review` e event sourcing — oferece garantias de rastreabilidade e qualidade que o fluxo atual (BMAD direto) não provê formalmente.
+
+### Decisão
+**Não utilizar ESAA no MVP atual.** O time optou por manter o BMAD como orquestrador de desenvolvimento para garantir velocidade de entrega no MVP. O modelo atual está funcionando bem com Conventional Commits, CI/CD via GitHub Actions e TDD.
+
+### Razão para registrar
+A experiência do Glauber com o ESAA deixou-o confiante na metodologia para projetos com maior rigor de processo. Após o MVP, avaliar:
+1. Introduzir ESAA para os epics de features críticas (LLM, multi-tenant avançado)
+2. Usar ESAA como framework de auditoria de qualidade, em paralelo com o BMAD
+3. Migrar o pipeline de dev para ESAA em uma segunda fase do produto
+
+### Critério de reavaliação
+Quando: após conclusão do Epic 5 (MVP funcional com LLM integrado) ou se o time identificar degradação de qualidade recorrente não capturada pelos testes atuais.
+
+---
+
+## Tópicos para Discussão na Sessão de Evolução de Agentes
+
 1. **Compatibilidade com BMAD original:** Como adicionar verificações de infraestrutura sem quebrar o contrato do workflow upstream?
 2. **Scripts de setup como entregável:** Tornar scripts de setup um entregável obrigatório para stories de inicialização de serviços?
 3. **Instruções para o usuário:** O agente deve agrupar todos os comandos do usuário em uma única mensagem no início da story?
 4. **Ambientes de desenvolvimento compartilhados:** Como o agente deve lidar com máquinas que rodam múltiplos projetos simultaneamente?
+5. **ESAA como framework complementar:** Avaliar integração pós-MVP para rastreabilidade e auditoria de qualidade.
 
 ---
 
-*Última atualização: 2026-03-30 | Sessão: Sprint 1 / Stories 1.1–1.2*
+*Última atualização: 2026-03-30 | Sessão: Epic 2 completo — Retrospectiva*
