@@ -1,0 +1,54 @@
+# ============================================
+# ReqStudio — Root .gitignore
+# ============================================
+
+# ── Ambientes e Segredos ────────────────────
+**/.env
+**/.env.local
+**/.env.production
+**/.env.*.local
+*.secret
+*.key
+
+# ── AI Tool Cache (dados locais, não código) ─
+.gemini/
+.cline/
+.claude/
+
+# ── Arquivos pessoais/negócios ───────────────
+*.csv
+*.xlsx
+*.xls
+
+# ── Python ──────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.venv/
+venv/
+env/
+*.egg-info/
+.pytest_cache/
+.coverage
+htmlcov/
+.ruff_cache/
+
+# ── Node / Frontend ──────────────────────────
+node_modules/
+reqstudio/reqstudio-ui/dist/
+
+# ── Docker ───────────────────────────────────
+reqstudio/pgdata/
+
+# ── IDE ──────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ── OS ───────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
