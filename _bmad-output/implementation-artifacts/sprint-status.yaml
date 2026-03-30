@@ -50,6 +50,7 @@ development_status:
   1-2-inicializacao-frontend-react-vite-shadcn: done
   1-3-design-system-foundation-tokens-tipografia-tema: done
   1-4-core-backend-middleware-error-handling-telemetria: done
+  1-5-ci-cd-pipeline-versionamento: done
   epic-1-retrospective: done
 
   # ═══════════════════════════════════════════════════

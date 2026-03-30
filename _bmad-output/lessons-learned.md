@@ -146,7 +146,48 @@ O agente deve aplicar um **"Princípio de Verificação de Saúde da Dependênci
 
 ---
 
+## Lição 7 — CI/CD e Git: Infraestrutura de Versionamento Ausente do Epic 1
+
+**Sprint / Story:** Epic 1 (Infraestrutura e Fundação)
+**Severidade:** Média (não bloqueou desenvolvimento, mas criou dívida técnica de processo)
+
+### O que aconteceu
+Duas sprints foram completadas (Epic 1 completo + Story 2.1 e 2.2) sem que o repositório git fosse sequer inicializado. Não havia `git init`, não havia remote configurado, e não havia pipeline de CI/CD. Esses elementos foram adicionados manualmente após a demanda do usuário, fora do fluxo normal de desenvolvimento.
+
+### Causa raiz
+O Epic 1 foi definido pelos agentes com foco nos aspectos técnicos de código (API, frontend, design system) mas **omitiu as histórias de infraestrutura de versionamento e entrega contínua**, que são pré-requisitos para qualquer projeto profissional:
+
+- Sem story de "git init + remote + branch strategy"
+- Sem story de "CI pipeline (testes automáticos no PR)"
+- Sem story de "CD pipeline (deploy automatizado)"
+
+### Responsabilidade no BMAD
+
+| Agente | Deveria ter feito |
+|--------|-----------------|
+| **Winston (Arquiteto)** | Incluir seção de CI/CD na `architecture.md` |
+| **Bob (Scrum Master)** | Questionar ausência de stories de versionamento no sprint planning |
+| **Dev Agent** | Criar `.github/workflows/*.yml` como parte de qualquer story de infrastructure |
+
+### Sugestão de evolução para o agente (genérica)
+
+O agente deve aplicar um **"Princípio de Infraestrutura Mínima de Entrega"**: todo Epic 1 (ou equivalente) de qualquer projeto **deve** incluir obrigatoriamente:
+
+1. **Story de Versionamento:** `git init`, branch strategy (main/develop/feature), `.gitignore`, `.gitattributes`
+2. **Story de CI:** Pipeline de testes automáticos disparado no PR (GitHub Actions, GitLab CI, CircleCI, etc.)
+3. **Story de CD:** Pipeline de deploy para ambiente de staging (mínimo) com rollback automatizado
+4. **Generalização:** Isso se aplica independente de linguagem, framework ou plataforma — é um prerequisito universal para projetos de software profissionais
+
+### Action item para este projeto
+
+A story de CI/CD deve ser criada e adicionada ao backlog antes do início do Epic 3:
+- `POST /register` e `POST /login` devem passar em CI antes de qualquer PR ser mergeado
+- Deploy automatizado no Docker Hub ou registry equivalente
+
+---
+
 ## Tópicos para Discussão na Sessão de Evolução de Agentes
+
 
 
 
