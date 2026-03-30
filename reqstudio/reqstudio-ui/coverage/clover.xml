@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<coverage generated="1774900706777" clover="3.2.0">
-  <project timestamp="1774900706778" name="All files">
-    <metrics statements="218" coveredstatements="171" conditionals="152" coveredconditionals="100" methods="84" coveredmethods="57" elements="454" coveredelements="328" complexity="0" loc="218" ncloc="218" packages="8" files="15" classes="15"/>
+<coverage generated="1774900863962" clover="3.2.0">
+  <project timestamp="1774900863962" name="All files">
+    <metrics statements="218" coveredstatements="204" conditionals="152" coveredconditionals="121" methods="84" coveredmethods="68" elements="454" coveredelements="393" complexity="0" loc="218" ncloc="218" packages="8" files="15" classes="15"/>
     <package name="src">
       <metrics statements="8" coveredstatements="8" conditionals="0" coveredconditionals="0" methods="6" coveredmethods="3"/>
       <file name="App.tsx" path="C:\Users\Glauber\codes\ReqStudio\reqstudio\reqstudio-ui\src\App.tsx">
@@ -219,61 +219,61 @@
       </file>
     </package>
     <package name="src.services">
-      <metrics statements="49" coveredstatements="13" conditionals="31" coveredconditionals="4" methods="17" coveredmethods="3"/>
+      <metrics statements="49" coveredstatements="46" conditionals="31" coveredconditionals="25" methods="17" coveredmethods="14"/>
       <file name="apiClient.ts" path="C:\Users\Glauber\codes\ReqStudio\reqstudio\reqstudio-ui\src\services\apiClient.ts">
-        <metrics statements="36" coveredstatements="11" conditionals="22" coveredconditionals="3" methods="12" coveredmethods="3"/>
-        <line num="11" count="6" type="cond" truecount="1" falsecount="1"/>
-        <line num="25" count="2" type="stmt"/>
-        <line num="26" count="2" type="stmt"/>
-        <line num="27" count="2" type="stmt"/>
-        <line num="32" count="6" type="stmt"/>
-        <line num="34" count="6" type="stmt"/>
-        <line num="37" count="0" type="stmt"/>
-        <line num="41" count="0" type="stmt"/>
-        <line num="45" count="0" type="stmt"/>
-        <line num="49" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="50" count="0" type="stmt"/>
-        <line num="51" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="52" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="53" count="0" type="stmt"/>
-        <line num="61" count="1" type="stmt"/>
-        <line num="66" count="1" type="cond" truecount="1" falsecount="1"/>
-        <line num="67" count="0" type="stmt"/>
-        <line num="70" count="1" type="stmt"/>
-        <line num="77" count="0" type="cond" truecount="0" falsecount="5"/>
-        <line num="78" count="0" type="stmt"/>
-        <line num="79" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="80" count="0" type="stmt"/>
-        <line num="83" count="0" type="stmt"/>
-        <line num="84" count="0" type="stmt"/>
-        <line num="85" count="0" type="stmt"/>
-        <line num="91" count="0" type="stmt"/>
-        <line num="92" count="0" type="cond" truecount="0" falsecount="2"/>
+        <metrics statements="36" coveredstatements="33" conditionals="22" coveredconditionals="18" methods="12" coveredmethods="9"/>
+        <line num="11" count="8" type="cond" truecount="1" falsecount="1"/>
+        <line num="25" count="5" type="stmt"/>
+        <line num="26" count="5" type="stmt"/>
+        <line num="27" count="5" type="stmt"/>
+        <line num="32" count="8" type="stmt"/>
+        <line num="34" count="8" type="stmt"/>
+        <line num="37" count="30" type="stmt"/>
+        <line num="41" count="13" type="stmt"/>
+        <line num="45" count="3" type="stmt"/>
+        <line num="49" count="3" type="cond" truecount="2" falsecount="0"/>
+        <line num="50" count="1" type="stmt"/>
+        <line num="51" count="1" type="cond" truecount="1" falsecount="1"/>
+        <line num="52" count="3" type="cond" truecount="2" falsecount="0"/>
+        <line num="53" count="1" type="stmt"/>
+        <line num="61" count="8" type="stmt"/>
+        <line num="66" count="8" type="cond" truecount="2" falsecount="0"/>
+        <line num="67" count="2" type="stmt"/>
+        <line num="70" count="8" type="stmt"/>
+        <line num="77" count="7" type="cond" truecount="5" falsecount="0"/>
+        <line num="78" count="3" type="stmt"/>
+        <line num="79" count="3" type="cond" truecount="2" falsecount="0"/>
+        <line num="80" count="1" type="stmt"/>
+        <line num="83" count="2" type="stmt"/>
+        <line num="84" count="2" type="stmt"/>
+        <line num="85" count="2" type="stmt"/>
+        <line num="91" count="4" type="stmt"/>
+        <line num="92" count="4" type="cond" truecount="1" falsecount="1"/>
         <line num="93" count="0" type="stmt"/>
-        <line num="95" count="0" type="stmt"/>
-        <line num="113" count="6" type="stmt"/>
-        <line num="115" count="0" type="stmt"/>
-        <line num="121" count="0" type="stmt"/>
+        <line num="95" count="4" type="stmt"/>
+        <line num="113" count="8" type="stmt"/>
+        <line num="115" count="1" type="stmt"/>
+        <line num="121" count="2" type="stmt"/>
         <line num="127" count="1" type="stmt"/>
-        <line num="129" count="0" type="stmt"/>
+        <line num="129" count="3" type="stmt"/>
         <line num="132" count="0" type="stmt"/>
         <line num="135" count="0" type="stmt"/>
       </file>
       <file name="projectsApi.ts" path="C:\Users\Glauber\codes\ReqStudio\reqstudio\reqstudio-ui\src\services\projectsApi.ts">
-        <metrics statements="13" coveredstatements="2" conditionals="9" coveredconditionals="1" methods="5" coveredmethods="0"/>
-        <line num="8" count="4" type="cond" truecount="1" falsecount="1"/>
-        <line num="11" count="0" type="stmt"/>
-        <line num="15" count="0" type="stmt"/>
-        <line num="16" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="18" count="0" type="stmt"/>
-        <line num="24" count="0" type="stmt"/>
-        <line num="25" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="26" count="0" type="stmt"/>
-        <line num="66" count="4" type="stmt"/>
-        <line num="68" count="0" type="stmt"/>
-        <line num="73" count="0" type="stmt"/>
-        <line num="76" count="0" type="stmt"/>
-        <line num="82" count="0" type="stmt"/>
+        <metrics statements="13" coveredstatements="13" conditionals="9" coveredconditionals="7" methods="5" coveredmethods="5"/>
+        <line num="8" count="5" type="cond" truecount="1" falsecount="1"/>
+        <line num="11" count="10" type="stmt"/>
+        <line num="15" count="10" type="stmt"/>
+        <line num="16" count="10" type="cond" truecount="1" falsecount="1"/>
+        <line num="18" count="10" type="stmt"/>
+        <line num="24" count="10" type="stmt"/>
+        <line num="25" count="10" type="cond" truecount="2" falsecount="0"/>
+        <line num="26" count="9" type="stmt"/>
+        <line num="66" count="5" type="stmt"/>
+        <line num="68" count="3" type="stmt"/>
+        <line num="73" count="3" type="stmt"/>
+        <line num="76" count="2" type="stmt"/>
+        <line num="82" count="2" type="stmt"/>
       </file>
     </package>
     <package name="src.test">

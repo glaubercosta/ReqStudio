@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">13.33% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>2/15</span>
+                <span class='fraction'>15/15</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">11.11% </span>
+                <span class="strong">77.77% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>1/9</span>
+                <span class='fraction'>7/9</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/5</span>
+                <span class='fraction'>5/5</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">15.38% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>2/13</span>
+                <span class='fraction'>13/13</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line low'></div>
+    <div class='status-line high'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -156,28 +156,25 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">5x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">10x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">10x</span>
+<span class="cline-any cline-yes">10x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">10x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">10x</span>
+<span class="cline-any cline-yes">10x</span>
+<span class="cline-any cline-yes">9x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -214,23 +211,26 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">4x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">5x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -244,23 +244,23 @@ import { getAccessToken, ReqStudioApiError } from './apiClient'
 &nbsp;
 const API_BASE = import.meta.env.VITE_API_URL ?? <span class="branch-1 cbranch-no" title="branch not covered" >'http://localhost:8001'</span>
 &nbsp;
-async function <span class="fstat-no" title="function not covered" >request&lt;T&gt;(p</span>ath: string, init?: RequestInit): Promise&lt;T&gt; {
-  const headers: Record&lt;string, string&gt; = <span class="cstat-no" title="statement not covered" >{</span>
+async function request&lt;T&gt;(path: string, init?: RequestInit): Promise&lt;T&gt; {
+  const headers: Record&lt;string, string&gt; = {
     'Content-Type': 'application/json',
     ...(init?.headers as Record&lt;string, string&gt; | undefined),
   }
-  const <span class="cstat-no" title="statement not covered" >token = getAccessToken()</span>
-<span class="cstat-no" title="statement not covered" >  if (token) <span class="cstat-no" title="statement not covered" >headers['Authorization'] = `Bearer ${token}`</span></span>
+  const token = getAccessToken()
+  <span class="missing-if-branch" title="else path not taken" >E</span>if (token) headers['Authorization'] = `Bearer ${token}`
 &nbsp;
-  const res = <span class="cstat-no" title="statement not covered" >await fetch(`${API_BASE}${path}`, {</span>
+  const res = await fetch(`${API_BASE}${path}`, {
     ...init,
     credentials: 'include',
     headers,
   })
 &nbsp;
-  const body = <span class="cstat-no" title="statement not covered" >await res.json()</span>
-<span class="cstat-no" title="statement not covered" >  if (!res.ok) <span class="cstat-no" title="statement not covered" >throw new ReqStudioApiError(body.error, res.status)</span></span>
-<span class="cstat-no" title="statement not covered" >  return body</span>
+  const body = await res.json()
+  if (!res.ok) throw new ReqStudioApiError(body.error, res.status)
+  return body
 }
 &nbsp;
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -301,22 +301,22 @@ export interface UpdateProjectPayload {
 // ── API calls ─────────────────────────────────────────────────────────────────
 &nbsp;
 export const projectsApi = {
-<span class="fstat-no" title="function not covered" >  list: (s</span>tatus = <span class="branch-0 cbranch-no" title="branch not covered" >'active', p</span>age = <span class="branch-0 cbranch-no" title="branch not covered" >1, s</span>ize = <span class="branch-0 cbranch-no" title="branch not covered" >20) =&gt;</span>
-<span class="cstat-no" title="statement not covered" >    request&lt;{ data: ProjectListData }&gt;(</span>
+  list: (status = 'active', page = 1, size = 20) =&gt;
+    request&lt;{ data: ProjectListData }&gt;(
       `/api/v1/projects?status=${status}&amp;page=${page}&amp;size=${size}`,
     ),
 &nbsp;
-<span class="fstat-no" title="function not covered" >  get: (i</span>d: string) =&gt;
-<span class="cstat-no" title="statement not covered" >    request&lt;{ data: Project }&gt;(`/api/v1/projects/${id}`),</span>
+  get: (id: string) =&gt;
+    request&lt;{ data: Project }&gt;(`/api/v1/projects/${id}`),
 &nbsp;
-<span class="fstat-no" title="function not covered" >  create: (p</span>ayload: CreateProjectPayload) =&gt;
-<span class="cstat-no" title="statement not covered" >    request&lt;{ data: Project }&gt;('/api/v1/projects', {</span>
+  create: (payload: CreateProjectPayload) =&gt;
+    request&lt;{ data: Project }&gt;('/api/v1/projects', {
       method: 'POST',
       body: JSON.stringify(payload),
     }),
 &nbsp;
-<span class="fstat-no" title="function not covered" >  update: (i</span>d: string, payload: UpdateProjectPayload) =&gt;
-<span class="cstat-no" title="statement not covered" >    request&lt;{ data: Project }&gt;(`/api/v1/projects/${id}`, {</span>
+  update: (id: string, payload: UpdateProjectPayload) =&gt;
+    request&lt;{ data: Project }&gt;(`/api/v1/projects/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(payload),
     }),
@@ -328,7 +328,7 @@ export const projectsApi = {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-03-30T19:58:26.613Z
+                at 2026-03-30T20:01:03.823Z
             </div>
         <script src="../../prettify.js"></script>
         <script>
