@@ -15,9 +15,10 @@ const queryClient = new QueryClient({
 })
 
 // Lazy load para code-splitting automático
-const Home        = lazy(() => import('@/pages/Home'))
-const LoginPage   = lazy(() => import('@/pages/LoginPage'))
-const ProjectsPage = lazy(() => import('@/pages/ProjectsPage'))
+const Home              = lazy(() => import('@/pages/Home'))
+const LoginPage         = lazy(() => import('@/pages/LoginPage'))
+const ProjectsPage      = lazy(() => import('@/pages/ProjectsPage'))
+const ProjectDetailPage = lazy(() => import('@/pages/ProjectDetailPage'))
 
 const PageLoader = () => (
   <div className="flex min-h-screen items-center justify-center bg-background">
@@ -43,9 +44,9 @@ export default function App() {
 
                 {/* Protegidas — requer autenticação */}
                 <Route element={<ProtectedRoute />}>
-                  <Route path="/projects"        element={<ProjectsPage />} />
-                  <Route path="/projects/new"    element={<ProjectsPage />} />
-                  <Route path="/projects/:id"    element={<ProjectsPage />} />
+                  <Route path="/projects"     element={<ProjectsPage />} />
+                  <Route path="/projects/new" element={<ProjectsPage />} />
+                  <Route path="/projects/:id" element={<ProjectDetailPage />} />
                 </Route>
 
                 {/* Fallback */}
