@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ReqStudio — Design Directions</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --primary: hsl(234, 89%, 56%);
+    --primary-hover: hsl(234, 89%, 48%);
+    --primary-light: hsl(234, 89%, 96%);
+    --user-message: hsl(234, 70%, 65%);
+    --accent: hsl(38, 92%, 50%);
+    --accent-light: hsl(38, 92%, 95%);
+    --success: hsl(152, 69%, 41%);
+    --warning: hsl(38, 92%, 45%);
+    --error: hsl(0, 72%, 58%);
+    --info: hsl(234, 60%, 65%);
+    --bg: hsl(220, 14%, 98%);
+    --surface: hsl(0, 0%, 100%);
+    --border: hsl(220, 13%, 91%);
+    --text: hsl(224, 71%, 13%);
+    --text-secondary: hsl(220, 9%, 46%);
+    --text-muted: hsl(220, 9%, 63%);
+    --radius-sm: 6px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+    --shadow-md: 0 4px 6px rgba(0,0,0,0.07);
+    --shadow-lg: 0 10px 15px rgba(0,0,0,0.1);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', system-ui, sans-serif; background: hsl(224, 30%, 8%); color: var(--text); }
+
+  /* Navigation */
+  .nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; background: hsl(224, 30%, 6%); border-bottom: 1px solid hsl(224, 20%, 18%); padding: 16px 32px; display: flex; align-items: center; justify-content: space-between; }
+  .nav h1 { color: white; font-size: 18px; font-weight: 600; }
+  .nav-tabs { display: flex; gap: 4px; }
+  .nav-tab { padding: 8px 16px; border-radius: var(--radius-sm); border: none; background: transparent; color: hsl(220, 9%, 63%); font-family: inherit; font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.2s; }
+  .nav-tab:hover { background: hsl(224, 20%, 15%); color: white; }
+  .nav-tab.active { background: var(--primary); color: white; }
+
+  /* Sections */
+  .section { display: none; padding: 80px 32px 32px; min-height: 100vh; }
+  .section.active { display: block; }
+  .section-title { color: white; font-size: 28px; font-weight: 700; margin-bottom: 8px; }
+  .section-desc { color: hsl(220, 9%, 63%); font-size: 15px; margin-bottom: 32px; line-height: 1.6; }
+
+  /* Device frames */
+  .devices { display: flex; gap: 32px; justify-content: center; flex-wrap: wrap; align-items: flex-start; }
+  .device { background: hsl(224, 25%, 12%); border-radius: 16px; overflow: hidden; border: 1px solid hsl(224, 20%, 18%); }
+  .device-header { padding: 8px 16px; background: hsl(224, 25%, 10%); display: flex; align-items: center; gap: 8px; border-bottom: 1px solid hsl(224, 20%, 18%); }
+  .device-dot { width: 8px; height: 8px; border-radius: 50%; }
+  .device-dot.r { background: hsl(0, 72%, 58%); }
+  .device-dot.y { background: hsl(38, 92%, 50%); }
+  .device-dot.g { background: hsl(152, 69%, 41%); }
+  .device-label { margin-left: auto; color: hsl(220, 9%, 46%); font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
+
+  /* Mobile frame */
+  .mobile-frame { width: 375px; }
+  .mobile-screen { height: 667px; overflow: hidden; }
+
+  /* Desktop frame */
+  .desktop-frame { width: 900px; }
+  .desktop-screen { height: 560px; overflow: hidden; }
+
+  /* ====== MOCKUP CONTENT ====== */
+
+  /* Direction A: Clean & Warm */
+  .dir-a { background: var(--bg); }
+  .dir-a .app-header { padding: 12px 16px; background: var(--surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+  .dir-a .app-logo { font-weight: 700; font-size: 16px; color: var(--primary); }
+  .dir-a .app-save { font-size: 11px; color: var(--text-muted); display: flex; align-items: center; gap: 4px; }
+  .dir-a .app-save::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--success); }
+
+  /* Chat area */
+  .chat-area { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+  .msg { max-width: 85%; padding: 12px 16px; border-radius: var(--radius-lg); font-size: 14px; line-height: 1.6; animation: fadeIn 0.3s ease; }
+  .msg-ai { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg) var(--radius-lg) var(--radius-lg) 4px; align-self: flex-start; }
+  .msg-user { background: var(--user-message); color: white; border-radius: var(--radius-lg) var(--radius-lg) 4px var(--radius-lg); align-self: flex-end; }
+  .msg-ai .msg-name { font-size: 11px; font-weight: 600; color: var(--primary); margin-bottom: 4px; }
+  .citation { display: inline-flex; align-items: center; gap: 3px; padding: 2px 6px; background: var(--info); color: white; border-radius: 4px; font-size: 10px; font-weight: 600; cursor: pointer; }
+
+  /* Input area */
+  .input-area { padding: 12px 16px; background: var(--surface); border-top: 1px solid var(--border); }
+  .input-box { width: 100%; padding: 12px 16px; border: 1px solid var(--border); border-radius: var(--radius-md); font-family: inherit; font-size: 14px; resize: none; outline: none; color: var(--text); min-height: 48px; }
+  .input-box::placeholder { color: var(--text-muted); }
+  .input-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
+  .input-btn { padding: 8px 20px; border-radius: var(--radius-md); border: none; font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+  .input-btn-primary { background: var(--primary); color: white; }
+  .input-btn-secondary { background: transparent; color: var(--text-muted); font-size: 18px; border: none; cursor: pointer; }
+
+  /* Progress indicator */
+  .progress-bar { padding: 8px 16px; background: var(--accent-light); display: flex; align-items: center; gap: 8px; }
+  .progress-label { font-size: 11px; font-weight: 500; color: var(--warning); }
+  .progress-track { flex: 1; height: 4px; background: hsl(38, 30%, 85%); border-radius: 2px; }
+  .progress-fill { height: 100%; background: var(--accent); border-radius: 2px; width: 65%; transition: width 0.5s ease; }
+
+  /* Tabs mobile */
+  .tab-bar { display: flex; border-bottom: 1px solid var(--border); background: var(--surface); }
+  .tab-item { flex: 1; padding: 10px 0; text-align: center; font-size: 13px; font-weight: 500; color: var(--text-muted); border-bottom: 2px solid transparent; cursor: pointer; position: relative; }
+  .tab-item.active { color: var(--primary); border-bottom-color: var(--primary); }
+  .tab-badge { position: absolute; top: 6px; right: calc(50% - 30px); width: 8px; height: 8px; background: var(--accent); border-radius: 50%; }
+
+  /* Desktop split view */
+  .split-view { display: flex; height: calc(100% - 44px); }
+  .split-chat { flex: 1; display: flex; flex-direction: column; border-right: 1px solid var(--border); }
+  .split-artifact { flex: 1; background: var(--bg); overflow-y: auto; }
+  .artifact-content { padding: 24px; font-size: 14px; line-height: 1.7; }
+  .artifact-content h2 { font-size: 18px; color: var(--text); margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid var(--primary-light); }
+  .artifact-content h3 { font-size: 15px; color: var(--text-secondary); margin: 16px 0 8px; }
+  .artifact-content p { color: var(--text-secondary); margin-bottom: 12px; }
+  .artifact-section { padding: 12px; margin-bottom: 8px; border-radius: var(--radius-md); border-left: 3px solid var(--success); background: hsl(152, 30%, 97%); }
+  .artifact-section.pending { border-left-color: var(--border); background: var(--bg); }
+  .artifact-section.active { border-left-color: var(--accent); background: var(--accent-light); }
+  .artifact-section-title { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+  .artifact-section-meta { font-size: 11px; color: var(--text-muted); display: flex; align-items: center; gap: 6px; }
+  .coverage-badge { padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 600; }
+  .coverage-badge.complete { background: hsl(152, 50%, 92%); color: var(--success); }
+  .coverage-badge.partial { background: var(--accent-light); color: var(--warning); }
+  .coverage-badge.empty { background: hsl(220, 14%, 94%); color: var(--text-muted); }
+
+  /* ====== DIRECTION B: Dashboard ====== */
+  .dashboard { background: var(--bg); padding: 24px; height: 100%; }
+  .dash-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+  .dash-title { font-size: 22px; font-weight: 700; color: var(--text); }
+  .dash-subtitle { font-size: 13px; color: var(--text-muted); }
+  .dash-btn { padding: 10px 20px; background: var(--primary); color: white; border: none; border-radius: var(--radius-md); font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; }
+  .dash-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
+  .project-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px; cursor: pointer; transition: all 0.2s; }
+  .project-card:hover { border-color: var(--primary); box-shadow: var(--shadow-md); transform: translateY(-2px); }
+  .project-card-name { font-size: 16px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+  .project-card-desc { font-size: 13px; color: var(--text-muted); margin-bottom: 16px; line-height: 1.5; }
+  .project-card-progress { margin-bottom: 8px; }
+  .project-card-bar { height: 6px; background: hsl(220, 14%, 93%); border-radius: 3px; overflow: hidden; }
+  .project-card-fill { height: 100%; border-radius: 3px; transition: width 0.5s; }
+  .project-card-meta { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted); }
+  .project-card-status { display: flex; align-items: center; gap: 4px; }
+  .status-dot { width: 6px; height: 6px; border-radius: 50%; }
+
+  /* ====== DIRECTION C: Disagreement ====== */
+  .disagreement { background: var(--surface); border: 1px solid var(--warning); border-radius: var(--radius-lg); margin: 12px 16px; padding: 16px; }
+  .disagreement-header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+  .disagreement-icon { font-size: 16px; }
+  .disagreement-title { font-size: 13px; font-weight: 600; color: var(--warning); }
+  .disagreement-body { font-size: 13px; line-height: 1.6; color: var(--text-secondary); margin-bottom: 12px; }
+  .disagreement-ref { font-size: 12px; color: var(--text-muted); padding: 8px 12px; background: var(--bg); border-radius: var(--radius-sm); margin-bottom: 12px; font-style: italic; }
+  .disagreement-actions { display: flex; gap: 8px; }
+  .disagreement-btn { padding: 8px 16px; border-radius: var(--radius-sm); font-family: inherit; font-size: 12px; font-weight: 600; cursor: pointer; border: none; }
+  .disagreement-btn-keep { background: var(--primary); color: white; }
+  .disagreement-btn-accept { background: transparent; border: 1px solid var(--border); color: var(--text-secondary); }
+
+  /* Welcome screen */
+  .welcome { padding: 32px 16px; text-align: center; }
+  .welcome-emoji { font-size: 48px; margin-bottom: 16px; }
+  .welcome-title { font-size: 20px; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+  .welcome-subtitle { font-size: 14px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 24px; }
+  .welcome-summary { text-align: left; padding: 16px; background: var(--primary-light); border-radius: var(--radius-md); margin-bottom: 16px; }
+  .welcome-summary-title { font-size: 12px; font-weight: 600; color: var(--primary); margin-bottom: 8px; }
+  .welcome-summary-item { font-size: 13px; color: var(--text-secondary); padding: 4px 0; display: flex; align-items: center; gap: 8px; }
+
+  /* Keyframes */
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+  /* Labels */
+  .label { display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 600; letter-spacing: 0.3px; margin-bottom: 16px; }
+  .label-mobile { background: hsl(280, 60%, 92%); color: hsl(280, 60%, 40%); }
+  .label-desktop { background: hsl(200, 60%, 92%); color: hsl(200, 60%, 35%); }
+  .label-pattern { background: hsl(152, 40%, 92%); color: hsl(152, 50%, 30%); }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <h1>🎨 ReqStudio Design Directions</h1>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="showSection('session')">Sessão de Elicitação</button>
+    <button class="nav-tab" onclick="showSection('dashboard')">Dashboard</button>
+    <button class="nav-tab" onclick="showSection('patterns')">Padrões UX</button>
+  </div>
+</nav>
+
+<!-- SECTION 1: Session -->
+<div id="session" class="section active">
+  <h2 class="section-title">Sessão de Elicitação</h2>
+  <p class="section-desc">A tela principal do ReqStudio — onde Ana conversa com a IA e o artefato é construído progressivamente.</p>
+
+  <div class="devices">
+    <!-- Mobile -->
+    <div class="device mobile-frame">
+      <div class="device-header">
+        <div class="device-dot r"></div>
+        <div class="device-dot y"></div>
+        <div class="device-dot g"></div>
+        <span class="device-label">Mobile 375px — Tab Chat</span>
+      </div>
+      <div class="mobile-screen dir-a">
+        <div class="app-header">
+          <span class="app-logo">ReqStudio</span>
+          <span class="app-save">Salvo há 3s</span>
+        </div>
+        <div class="progress-bar">
+          <span class="progress-label">Cobertura 65%</span>
+          <div class="progress-track"><div class="progress-fill"></div></div>
+        </div>
+        <div class="tab-bar">
+          <div class="tab-item active">💬 Conversa</div>
+          <div class="tab-item">📄 Artefato <span class="tab-badge"></span></div>
+        </div>
+        <div class="chat-area" style="height: 400px; overflow-y: auto;">
+          <div class="msg msg-ai">
+            <div class="msg-name">ReqStudio</div>
+            Li os documentos que você trouxe. Entendi que se trata de um sistema de rastreamento de entregas last-mile com desafios de visibilidade em tempo real. <span class="citation">📎 SLA_v2.pdf</span><br><br>Me conta: qual a maior dor que seu time enfrenta hoje com esse processo?
+          </div>
+          <div class="msg msg-user">
+            O maior problema é que quando o entregador sai do centro de distribuição, perdemos visibilidade. O cliente liga perguntando e ninguém sabe dizer onde está. Já tentamos usar WhatsApp mas não escala.
+          </div>
+          <div class="msg msg-ai">
+            <div class="msg-name">ReqStudio</div>
+            Entendi — visibilidade post-despacho é o gap. Notei que no SLA_v2 <span class="citation">📎 p.12</span> vocês prometem "atualização a cada 30 min". Esse compromisso poderia mudar pra tempo real, ou o SLA é contratual?
+          </div>
+        </div>
+        <div class="input-area">
+          <textarea class="input-box" placeholder="Conte mais sobre o problema..." rows="2"></textarea>
+          <div class="input-actions">
+            <button class="input-btn-secondary">📎</button>
+            <button class="input-btn input-btn-primary">Enviar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Desktop -->
+    <div class="device desktop-frame">
+      <div class="device-header">
+        <div class="device-dot r"></div>
+        <div class="device-dot y"></div>
+        <div class="device-dot g"></div>
+        <span class="device-label">Desktop 1280px — Split View</span>
+      </div>
+      <div class="desktop-screen dir-a">
+        <div class="app-header">
+          <span class="app-logo">ReqStudio</span>
+          <div style="display:flex;align-items:center;gap:16px;">
+            <span class="app-save">Salvo há 3s</span>
+            <span style="font-size:12px;color:var(--text-muted);">Projeto: Rastreamento Last-Mile</span>
+          </div>
+        </div>
+        <div class="split-view">
+          <div class="split-chat">
+            <div class="progress-bar">
+              <span class="progress-label">Cobertura 65%</span>
+              <div class="progress-track"><div class="progress-fill"></div></div>
+            </div>
+            <div class="chat-area" style="flex:1;overflow-y:auto;">
+              <div class="msg msg-ai">
+                <div class="msg-name">ReqStudio</div>
+                Li os documentos que você trouxe. Entendi que se trata de um sistema de rastreamento last-mile com desafios de visibilidade. <span class="citation">📎 SLA_v2.pdf</span><br><br>Me conta: qual a maior dor hoje?
+              </div>
+              <div class="msg msg-user">
+                O maior problema é perda de visibilidade post-despacho. Cliente liga e ninguém sabe onde está.
+              </div>
+              <div class="msg msg-ai">
+                <div class="msg-name">ReqStudio</div>
+                Notei que no SLA_v2 <span class="citation">📎 p.12</span> prometem "atualização a cada 30 min". Esse SLA é contratual?
+              </div>
+              <div class="msg msg-user">
+                Sim, é contratual. Mas queremos oferecer tempo real como diferencial.
+              </div>
+              <div class="msg msg-ai">
+                <div class="msg-name">ReqStudio</div>
+                Ótimo. Vou documentar como requisito aspiracional com nota sobre implicação contratual.
+              </div>
+            </div>
+            <div class="input-area">
+              <textarea class="input-box" placeholder="Conte mais sobre o problema..." rows="2"></textarea>
+              <div class="input-actions">
+                <button class="input-btn-secondary">📎</button>
+                <button class="input-btn input-btn-primary">Enviar</button>
+              </div>
+            </div>
+          </div>
+          <div class="split-artifact">
+            <div class="artifact-content">
+              <h2>📄 Requisitos — Rastreamento Last-Mile</h2>
+              <div class="artifact-section">
+                <div class="artifact-section-title">1. Contexto do Problema</div>
+                <div class="artifact-section-meta"><span class="coverage-badge complete">✓ Completo</span> 3 fontes</div>
+              </div>
+              <div class="artifact-section active">
+                <div class="artifact-section-title">2. Visibilidade e Rastreamento</div>
+                <div class="artifact-section-meta"><span class="coverage-badge partial">◐ 65%</span> Construindo...</div>
+              </div>
+              <div class="artifact-section pending">
+                <div class="artifact-section-title">3. SLA e Compromissos</div>
+                <div class="artifact-section-meta"><span class="coverage-badge empty">○ Pendente</span></div>
+              </div>
+              <div class="artifact-section pending">
+                <div class="artifact-section-title">4. Integrações</div>
+                <div class="artifact-section-meta"><span class="coverage-badge empty">○ Pendente</span></div>
+              </div>
+              <div class="artifact-section pending">
+                <div class="artifact-section-title">5. Requisitos Não-Funcionais</div>
+                <div class="artifact-section-meta"><span class="coverage-badge empty">○ Pendente</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 2: Dashboard -->
+<div id="dashboard" class="section">
+  <h2 class="section-title">Dashboard de Projetos</h2>
+  <p class="section-desc">Hub da Carla — multi-projeto com progresso visual e troca de contexto rápida.</p>
+
+  <div class="devices">
+    <!-- Mobile Dashboard -->
+    <div class="device mobile-frame">
+      <div class="device-header">
+        <div class="device-dot r"></div>
+        <div class="device-dot y"></div>
+        <div class="device-dot g"></div>
+        <span class="device-label">Mobile 375px</span>
+      </div>
+      <div class="mobile-screen dir-a" style="overflow-y:auto;">
+        <div class="app-header">
+          <span class="app-logo">ReqStudio</span>
+          <span style="width:32px;height:32px;background:var(--primary);color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;">CC</span>
+        </div>
+        <div style="padding:20px 16px;">
+          <div style="font-size:22px;font-weight:700;color:var(--text);margin-bottom:4px;">Meus Projetos</div>
+          <div style="font-size:13px;color:var(--text-muted);margin-bottom:20px;">3 ativos · 1 concluído</div>
+          
+          <div class="project-card" style="margin-bottom:12px;">
+            <div class="project-card-name">Rastreamento Last-Mile</div>
+            <div class="project-card-desc">Logística Express Ltda.</div>
+            <div class="project-card-progress">
+              <div class="project-card-bar"><div class="project-card-fill" style="width:65%;background:var(--accent);"></div></div>
+            </div>
+            <div class="project-card-meta">
+              <span>65% cobertura</span>
+              <span class="project-card-status"><span class="status-dot" style="background:var(--accent);"></span> Em andamento</span>
+            </div>
+          </div>
+          
+          <div class="project-card" style="margin-bottom:12px;">
+            <div class="project-card-name">Portal do Paciente</div>
+            <div class="project-card-desc">ClínicaSaúde S.A.</div>
+            <div class="project-card-progress">
+              <div class="project-card-bar"><div class="project-card-fill" style="width:30%;background:var(--primary);"></div></div>
+            </div>
+            <div class="project-card-meta">
+              <span>30% cobertura</span>
+              <span class="project-card-status"><span class="status-dot" style="background:var(--primary);"></span> Contextualização</span>
+            </div>
+          </div>
+          
+          <div class="project-card" style="margin-bottom:12px;">
+            <div class="project-card-name">Sistema de Ponto</div>
+            <div class="project-card-desc">TechCorp Brasil</div>
+            <div class="project-card-progress">
+              <div class="project-card-bar"><div class="project-card-fill" style="width:100%;background:var(--success);"></div></div>
+            </div>
+            <div class="project-card-meta">
+              <span>100% completo</span>
+              <span class="project-card-status"><span class="status-dot" style="background:var(--success);"></span> Concluído</span>
+            </div>
+          </div>
+
+          <button class="dash-btn" style="width:100%;justify-content:center;margin-top:8px;">
+            + Novo Projeto
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Desktop Dashboard -->
+    <div class="device desktop-frame">
+      <div class="device-header">
+        <div class="device-dot r"></div>
+        <div class="device-dot y"></div>
+        <div class="device-dot g"></div>
+        <span class="device-label">Desktop 1280px</span>
+      </div>
+      <div class="desktop-screen">
+        <div class="dashboard">
+          <div class="dash-header">
+            <div>
+              <div class="dash-title">Meus Projetos</div>
+              <div class="dash-subtitle">3 projetos ativos · 1 concluído · Último acesso: Rastreamento Last-Mile (2h atrás)</div>
+            </div>
+            <button class="dash-btn">+ Novo Projeto</button>
+          </div>
+          <div class="dash-grid">
+            <div class="project-card">
+              <div class="project-card-name">Rastreamento Last-Mile</div>
+              <div class="project-card-desc">Logística Express Ltda. · Visibilidade post-despacho e SLA</div>
+              <div class="project-card-progress">
+                <div class="project-card-bar"><div class="project-card-fill" style="width:65%;background:var(--accent);"></div></div>
+              </div>
+              <div class="project-card-meta">
+                <span>65% cobertura · 5 seções</span>
+                <span class="project-card-status"><span class="status-dot" style="background:var(--accent);"></span> Fase 2 — Guiada</span>
+              </div>
+            </div>
+            <div class="project-card">
+              <div class="project-card-name">Portal do Paciente</div>
+              <div class="project-card-desc">ClínicaSaúde S.A. · Agendamento e prontuário digital</div>
+              <div class="project-card-progress">
+                <div class="project-card-bar"><div class="project-card-fill" style="width:30%;background:var(--primary);"></div></div>
+              </div>
+              <div class="project-card-meta">
+                <span>30% cobertura · 2 seções</span>
+                <span class="project-card-status"><span class="status-dot" style="background:var(--primary);"></span> Contextualização</span>
+              </div>
+            </div>
+            <div class="project-card">
+              <div class="project-card-name">Gestão de Frota</div>
+              <div class="project-card-desc">TransportesBR · Manutenção preventiva e compliance</div>
+              <div class="project-card-progress">
+                <div class="project-card-bar"><div class="project-card-fill" style="width:10%;background:hsl(220, 14%, 80%);"></div></div>
+              </div>
+              <div class="project-card-meta">
+                <span>10% cobertura · 1 seção</span>
+                <span class="project-card-status"><span class="status-dot" style="background:hsl(220, 14%, 70%);"></span> Novo</span>
+              </div>
+            </div>
+            <div class="project-card" style="opacity:0.6;">
+              <div class="project-card-name">Sistema de Ponto</div>
+              <div class="project-card-desc">TechCorp Brasil · Registro e relatórios de jornada</div>
+              <div class="project-card-progress">
+                <div class="project-card-bar"><div class="project-card-fill" style="width:100%;background:var(--success);"></div></div>
+              </div>
+              <div class="project-card-meta">
+                <span>100% completo · 7 seções</span>
+                <span class="project-card-status"><span class="status-dot" style="background:var(--success);"></span> Concluído</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 3: UX Patterns -->
+<div id="patterns" class="section">
+  <h2 class="section-title">Padrões UX Especiais</h2>
+  <p class="section-desc">Padrões inovadores do ReqStudio — discordância respeitosa, boas-vindas contextuais e card feed mobile.</p>
+
+  <div class="devices">
+    <!-- Disagreement pattern -->
+    <div class="device mobile-frame">
+      <div class="device-header">
+        <div class="device-dot r"></div>
+        <div class="device-dot y"></div>
+        <div class="device-dot g"></div>
+        <span class="device-label">Discordância Respeitosa</span>
+      </div>
+      <div class="mobile-screen dir-a" style="overflow-y:auto;">
+        <div class="app-header">
+          <span class="app-logo">ReqStudio</span>
+          <span class="app-save">Salvo há 1s</span>
+        </div>
+        <div class="chat-area">
+          <div class="msg msg-user">
+            O prazo de entrega padrão é 48 horas, não 24.
+          </div>
+          <div class="msg msg-ai">
+            <div class="msg-name">ReqStudio</div>
+            Entendo. Encontrei uma diferença: no documento de SLA <span class="citation">📎 SLA_v2 p.8</span> consta "prazo máximo de 24h para região metropolitana". Pode ser que o prazo de 48h se aplique a outra região?
+          </div>
+          <div class="disagreement">
+            <div class="disagreement-header">
+              <span class="disagreement-icon">⚠️</span>
+              <span class="disagreement-title">Decisão de Domínio</span>
+            </div>
+            <div class="disagreement-body">
+              Você afirma 48h como padrão. O documento SLA_v2 indica 24h para região metropolitana. Você conhece melhor este mercado.
+            </div>
+            <div class="disagreement-ref">
+              "Prazo máximo de entrega: 24 horas úteis para a região metropolitana" — SLA_v2.pdf, página 8
+            </div>
+            <div class="disagreement-actions">
+              <button class="disagreement-btn disagreement-btn-keep">Manter 48h</button>
+              <button class="disagreement-btn disagreement-btn-accept">Aceitar 24h</button>
+            </div>
+            <div style="margin-top:8px;font-size:11px;color:var(--text-muted);">
+              Se mantiver, será documentado como Ponto de Discussão para validar com o time.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Welcome screen -->
+    <div class="device mobile-frame">
+      <div class="device-header">
+        <div class="device-dot r"></div>
+        <div class="device-dot y"></div>
+        <div class="device-dot g"></div>
+        <span class="device-label">Boas-vindas Contextuais</span>
+      </div>
+      <div class="mobile-screen dir-a">
+        <div class="app-header">
+          <span class="app-logo">ReqStudio</span>
+          <span class="app-save">Salvo</span>
+        </div>
+        <div class="welcome">
+          <div class="welcome-emoji">👋</div>
+          <div class="welcome-title">Bem-vinda de volta, Ana!</div>
+          <div class="welcome-subtitle">Rastreamento Last-Mile · Última sessão há 2 dias</div>
+          <div class="welcome-summary">
+            <div class="welcome-summary-title">Onde paramos:</div>
+            <div class="welcome-summary-item">✅ Contexto do problema — definido</div>
+            <div class="welcome-summary-item">✅ Visibilidade e rastreamento — 65%</div>
+            <div class="welcome-summary-item">⏳ SLA e compromissos — próximo tópico</div>
+            <div class="welcome-summary-item">○ Integrações — pendente</div>
+            <div class="welcome-summary-item">○ Requisitos não-funcionais — pendente</div>
+          </div>
+          <div style="padding:12px;background:var(--bg);border-radius:var(--radius-md);margin-bottom:16px;text-align:left;">
+            <div style="font-size:12px;font-weight:600;color:var(--primary);margin-bottom:6px;">Próximo passo sugerido:</div>
+            <div style="font-size:13px;color:var(--text-secondary);">Explorar regras de SLA e compromissos contratuais com base no documento que você importou.</div>
+          </div>
+          <button class="input-btn input-btn-primary" style="width:100%;padding:14px;">Continuar sessão</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Artifact as Feed (mobile) -->
+    <div class="device mobile-frame">
+      <div class="device-header">
+        <div class="device-dot r"></div>
+        <div class="device-dot y"></div>
+        <div class="device-dot g"></div>
+        <span class="device-label">Artifact as Feed (Cards)</span>
+      </div>
+      <div class="mobile-screen dir-a" style="overflow-y:auto;">
+        <div class="app-header">
+          <span class="app-logo">ReqStudio</span>
+          <span class="app-save">Salvo há 5s</span>
+        </div>
+        <div class="tab-bar">
+          <div class="tab-item">💬 Conversa</div>
+          <div class="tab-item active">📄 Artefato</div>
+        </div>
+        <div style="padding:12px;">
+          <div style="font-size:11px;color:var(--text-muted);margin-bottom:12px;text-align:center;">3 de 5 seções · 65% cobertura</div>
+          
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;margin-bottom:12px;border-left:3px solid var(--success);">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+              <span style="font-size:14px;font-weight:600;color:var(--text);">1. Contexto do Problema</span>
+              <span class="coverage-badge complete">✓ Completo</span>
+            </div>
+            <p style="font-size:13px;color:var(--text-secondary);line-height:1.6;">Sistema de rastreamento de entregas last-mile para Logística Express. Problema central: perda de visibilidade após despacho do centro de distribuição.</p>
+            <div style="margin-top:8px;font-size:11px;color:var(--text-muted);">3 fontes · Atualizado há 2 dias</div>
+          </div>
+          
+          <div style="background:var(--surface);border:1px solid var(--accent);border-radius:var(--radius-lg);padding:16px;margin-bottom:12px;border-left:3px solid var(--accent);box-shadow:var(--shadow-sm);">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+              <span style="font-size:14px;font-weight:600;color:var(--text);">2. Visibilidade e Rastreamento</span>
+              <span class="coverage-badge partial">◐ 65%</span>
+            </div>
+            <p style="font-size:13px;color:var(--text-secondary);line-height:1.6;">Requisitos de tracking em tempo real, notificações push para clientes, integração com GPS dos entregadores...</p>
+            <div style="margin-top:8px;display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:11px;color:var(--text-muted);">Em construção · 1 fonte</span>
+              <span style="font-size:11px;font-weight:600;color:var(--accent);">🔴 Ao vivo</span>
+            </div>
+          </div>
+          
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;margin-bottom:12px;opacity:0.6;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+              <span style="font-size:14px;font-weight:600;color:var(--text-muted);">3. SLA e Compromissos</span>
+              <span class="coverage-badge empty">○ Pendente</span>
+            </div>
+            <p style="font-size:12px;color:var(--text-muted);">Será explorado na próxima fase</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function showSection(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  event.target.classList.add('active');
+}
+</script>
+</body>
+</html>

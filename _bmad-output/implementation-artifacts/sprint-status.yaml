@@ -1,0 +1,130 @@
+# generated: 2026-03-29T18:47:00-03:00
+# last_updated: 2026-03-29T18:47:00-03:00
+# project: ReqStudio
+# project_key: NOKEY
+# tracking_system: file-system
+# story_location: _bmad-output/implementation-artifacts
+
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Epic Status Transitions:
+#   - backlog → in-progress: Automatically when first story is created (via create-story)
+#   - in-progress → done: Manually when all stories reach 'done' status
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created in stories folder
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review (via Dev's code-review workflow)
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+#
+# WORKFLOW NOTES:
+# ===============
+# - Epic transitions to 'in-progress' automatically when first story is created
+# - Stories can be worked in parallel if team capacity allows
+# - SM typically creates next story after previous one is 'done' to incorporate learnings
+# - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
+
+generated: 2026-03-29T18:47:00-03:00
+last_updated: 2026-03-30T11:27:00-03:00
+project: ReqStudio
+project_key: NOKEY
+tracking_system: file-system
+story_location: _bmad-output/implementation-artifacts
+
+development_status:
+  # ═══════════════════════════════════════════════════
+  # Epic 1: Infraestrutura e Fundação do Projeto
+  # ═══════════════════════════════════════════════════
+  epic-1: done
+  1-1-inicializacao-backend-fastapi-docker-compose: done
+  1-2-inicializacao-frontend-react-vite-shadcn: done
+  1-3-design-system-foundation-tokens-tipografia-tema: done
+  1-4-core-backend-middleware-error-handling-telemetria: done
+  epic-1-retrospective: done
+
+  # ═══════════════════════════════════════════════════
+  # Epic 2: Identidade, Acesso e Isolamento de Dados
+  # ═══════════════════════════════════════════════════
+  epic-2: in-progress
+  2-1-registro-usuario-email-senha: done
+  2-2-login-emissao-tokens-jwt: review
+  2-3-refresh-token-rotation-protecao-reuso: backlog
+  2-4-tenantmixin-isolamento-dados-banco: backlog
+  2-5-tela-login-registro-frontend: backlog
+  epic-2-retrospective: optional
+
+  # ═══════════════════════════════════════════════════
+  # Epic 3: Projetos como Espaços de Trabalho
+  # ═══════════════════════════════════════════════════
+  epic-3: backlog
+  3-1-crud-projetos-backend: backlog
+  3-2-dashboard-projetos-frontend: backlog
+  3-3-criacao-edicao-projeto-frontend: backlog
+  3-4-detalhe-projeto-boas-vindas-contextuais: backlog
+  3-5-arquivamento-projetos-filtro-status: backlog
+  epic-3-retrospective: optional
+
+  # ═══════════════════════════════════════════════════
+  # Epic 4: Enriquecimento de Contexto — Importação de Documentos
+  # ═══════════════════════════════════════════════════
+  epic-4: backlog
+  4-1-upload-parsing-documentos-backend: backlog
+  4-2-listagem-gerenciamento-documentos-projeto: backlog
+  4-3-interface-upload-documentos-frontend: backlog
+  epic-4-retrospective: optional
+
+  # ═══════════════════════════════════════════════════
+  # Epic 5: Sessão de Elicitação — O Core do Produto
+  # ═══════════════════════════════════════════════════
+  epic-5: backlog
+  5-1-modelo-dados-sessoes-mensagens: backlog
+  5-2-context-builder-montagem-prompt-isolamento: backlog
+  5-3-litellm-integration-abstracao-multi-provider-streaming: backlog
+  5-4-elicitation-engine-orquestracao-sessao-workflow: backlog
+  5-5-sse-endpoint-streaming-respostas: backlog
+  5-6-tela-sessao-chat-split-tabbed-view: backlog
+  5-7-streaming-chat-sse-client-typing-indicator: backlog
+  5-8-pausar-retomar-sessao: backlog
+  5-9-modo-degradado-ia-indisponivel: backlog
+  epic-5-retrospective: optional
+
+  # ═══════════════════════════════════════════════════
+  # Epic 6: Artefatos — Geração, Visualização e Exportação
+  # ═══════════════════════════════════════════════════
+  epic-6: backlog
+  6-1-modelo-artefato-json-canonico-versionamento: backlog
+  6-2-renderizacao-dual-visao-negocio-tecnica: backlog
+  6-3-cobertura-por-secao-artefato: backlog
+  6-4-exportacao-artefatos-markdown-json: backlog
+  6-5-tela-visualizacao-exportacao-artefatos: backlog
+  epic-6-retrospective: optional
+
+  # ═══════════════════════════════════════════════════
+  # Epic 7: Evolução Colaborativa (Growth)
+  # ═══════════════════════════════════════════════════
+  epic-7: backlog
+  7-1-rbac-papeis-permissoes-diferenciadas: backlog
+  7-2-publicacao-seletiva-artefatos: backlog
+  7-3-feedback-duvidas-por-secao-artefato: backlog
+  7-4-re-analise-assistida-ia-feedback: backlog
+  7-5-notificacoes-atualizacao-artefatos: backlog
+  epic-7-retrospective: optional
+
+  # ═══════════════════════════════════════════════════
+  # Epic 8: Elicitação Brownfield (Growth/Vision)
+  # ═══════════════════════════════════════════════════
+  epic-8: backlog
+  8-1-importacao-documentacao-projeto-existente: backlog
+  8-2-elicitacao-focada-gaps-analise-impacto: backlog
+  8-3-conexao-repositorio-codigo: backlog
+  epic-8-retrospective: optional
