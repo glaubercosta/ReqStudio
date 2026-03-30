@@ -70,9 +70,9 @@ development_status:
   epic-3: in-progress
   3-1-crud-projetos-backend: done
   3-2-dashboard-projetos-frontend: done
-  3-3-criacao-edicao-projeto-frontend: in-progress
-  3-4-detalhe-projeto-boas-vindas-contextuais: backlog
-  3-5-arquivamento-projetos-filtro-status: in-progress
+  3-3-criacao-edicao-projeto-frontend: done
+  3-4-detalhe-projeto-boas-vindas-contextuais: in-progress
+  3-5-arquivamento-projetos-filtro-status: done
   epic-3-retrospective: optional
 
   # ═══════════════════════════════════════════════════
