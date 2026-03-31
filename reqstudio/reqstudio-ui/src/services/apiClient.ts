@@ -53,14 +53,16 @@ async function refreshAccessToken(): Promise<string | null> {
   return token
 }
 
-async function request<T>(
+export async function request<T>(
   path: string,
   init?: RequestInit,
   isRetry = false,
 ): Promise<T> {
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    ...(init?.headers as Record<string, string> | undefined),
+  const headers: Record<string, string> = { ...init?.headers as Record<string, string> }
+
+  // Set default Content-Type to JSON only if body is not FormData
+  if (!(init?.body instanceof FormData) && !headers['Content-Type']) {
+    headers['Content-Type'] = 'application/json'
   }
 
   if (_accessToken) {

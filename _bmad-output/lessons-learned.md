@@ -311,4 +311,59 @@ Incluir em TODA story de frontend o AC:
 
 ---
 
-*Última atualização: 2026-03-30 | Sessão: Epic 3 completo — Frontend Tests*
+## Lição 11 — Amnésia Arquitetural e Perda de Contexto na Troca de Agentes
+
+**Sprint / Story:** Epic 4 (Backend Documents e Testes)
+**Severidade:** Alta (Geração de código fora do padrão esperado, reescrita de testes, bypass acidental da regra de isolamento `TenantScope` e gasto desnecessário de iterações/tokens)
+
+### O que aconteceu
+Durante a implementação das rotas de Documentos e de seus testes, o código inicial ignorou padrões estabelecidos no Epic 3. O agente original (ou o recém instanciado) tentou usar fixtures de Pytest (`client_a`, `client_b`) que não existiam ou não eram o padrão do `conftest.py` (que exigia envio de cabeçalhos de token genéricos), e quase gerou queries de banco sem a injeção estrita da clausula de TenantScope.
+
+### Causa raiz
+**O mito da "Onisciência" do Agente.** Acreditamos erroneamente que o agente "lê" toda a base de código a cada novo prompt. Na verdade, a janela de contexto vaza. Um agente novo que entra no meio do projeto tende a escrever código "padrão genérico de framework" (boilerplate de FastAPI/SQLAlchemy) se não for forçado a ler as regras arquiteturais locais ANTES de começar a codificar. O agente não sabia, "de cor", que neste projeto a regra de testes era usar `_auth(token)` ou que a segurança dependia do `TenantScope`.
+
+### Sugestão de evolução para o agente (genérica) / Padrão BMAD
+Para contornar o desperdício financeiro e temporal:
+
+1. **Uso de "Project Context" Condensado:** Precisamos manter um arquivo `project-context.md` ou regras estritas dentro da pasta `.cursorrules` ou `architecture.md` altamente destiladas contendo: "Padrão de Autenticação em testes: use X. Isolamento SQLAlchemy: obrigatoriamente use TenantScope".
+2. **Reconhecimento de Terreno Obrigatório (Read-Before-Write):** Em toda nova *Story*, o Agente de Desenvolvimento (`quick-dev` ou `dev-story`) **deve obrigatoriamente** inspecionar o código de um domínio pré-existente (por exemplo, ler `test_projects.py` antes de criar `test_documents.py`) para injetar a *Golden Meta-Pattern* em sua memória RAM instantânea (contexto local).
+3. **BMAD Check Readiness:** Antes da codificação (quando rodamos a preparação de História), a story deve ter um checklist arquitetural que aponte explicitamente quais padrões de projetos já existentes ela deve clonar/respeitar.
+
+### Action Item
+- [x] Documentar a "Amnésia Arquitetural" como fator de risco.
+- [x] Criado `project-context.md` na raiz com regras de TenantScope, testes e theming.
+
+---
+
+## Lição 12 — Stories Órfãs: Código Entregue mas Status Abandonado
+
+**Sprint / Story:** Epic 3 / Story 3.4 (Detalhe do Projeto com Boas-vindas Contextuais)
+**Severidade:** Média (não afetou o produto, mas contaminou o rastreamento de sprint e gerou confusão sobre o estado real do projeto)
+
+### O que aconteceu
+
+A Story 3.4 foi implementada por completo (`ProjectDetailPage.tsx` com WelcomeScreen, checklist de progresso, estados vazio e com sessões), mas o `sprint-status.yaml` permaneceu com `3-4: in-progress` e `epic-3: in-progress`. Isso só foi detectado quando um novo agente assumiu a sessão para o Epic 5 e verificou o estado do ficheiro de rastreamento.
+
+Ao mesmo tempo, não havia ficheiro de story criado para 3.2, 3.3, 3.4 nem 3.5 na pasta de artefatos de implementação — apenas para 3.1. Ou seja, as stories de frontend do Epic 3 foram implementadas "ao vivo" sem o rito formal de `create-story` → ficheiro `.md` na pasta de artefatos.
+
+### Causa raiz
+
+**A cerimónia de encerramento está desacoplada da entrega do código.** No fluxo BMAD, quem marca a story como `done` no `sprint-status.yaml` é o agente ou o humano *por fora* da implementação — é um acto manual e cerimonial. Quando múltiplas stories são implementadas em sequência rápida (especialmente num epic de frontend onde o ritmo é mais veloz), o rastreamento fica para trás. O problema agrava-se quando:
+
+1. **Transição entre epics sem gate de verificação** — O Epic 4 iniciou sem que o agente (ou o humano) verificasse se todas as stories do Epic 3 estavam formalmente fechadas.
+2. **Ausência de ficheiros de story formalizados** — Sem o rito de `create-story` a gerar os ficheiros `.md` individuais, desaparece o artefacto que serve de checklist e "contrato" entre o agente e o sprint status.
+3. **Troca de agente/sessão** — O novo agente herda o `sprint-status.yaml` mas não tem contexto sobre o que foi implementado na sessão anterior, assumindo que `in-progress` significa "incompleto".
+
+### Sugestão de evolução (genérica)
+
+> **Regra do "Gate de Transição entre Epics":** Antes de iniciar qualquer story do Epic N+1, o agente (ou o humano) DEVE verificar se todas as stories do Epic N estão marcadas como `done` no sprint-status. Se houver alguma em `in-progress` ou `backlog`, deve-se investigar se o código já existe e formalizar o status antes de prosseguir.
+
+> **Regra da "Story Formal":** Cada story implementada deve ter o seu ficheiro `.md` correspondente na pasta de artefatos de implementação. A ausência desse ficheiro é um sinal de que o processo foi atropelado. O ficheiro serve como contrato mínimo de rastreabilidade.
+
+### Action Item
+- [x] Story 3.4 e Epic 3 fechados formalmente no `sprint-status.yaml`.
+- [ ] Considerar adicionar, no workflow `bmad-sprint-planning` ou `bmad-create-story`, um passo de validação automática que verifique se o epic anterior está completamente `done` antes de gerar novas stories.
+
+---
+
+*Última atualização: 2026-03-31 | Sessão: Epic 5 — Fase de Elicitação*

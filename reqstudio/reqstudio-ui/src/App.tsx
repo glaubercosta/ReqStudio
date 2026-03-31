@@ -19,6 +19,7 @@ const Home              = lazy(() => import('@/pages/Home'))
 const LoginPage         = lazy(() => import('@/pages/LoginPage'))
 const ProjectsPage      = lazy(() => import('@/pages/ProjectsPage'))
 const ProjectDetailPage = lazy(() => import('@/pages/ProjectDetailPage'))
+const SessionPage       = lazy(() => import('@/pages/SessionPage'))
 
 const PageLoader = () => (
   <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-background" aria-label="Carregando">
@@ -48,6 +49,7 @@ export default function App() {
                   <Route path="/projects"     element={<ProjectsPage />} />
                   <Route path="/projects/new" element={<ProjectsPage />} />
                   <Route path="/projects/:id" element={<ProjectDetailPage />} />
+                  <Route path="/sessions/:id" element={<SessionPage />} />
                 </Route>
 
                 {/* Fallback */}

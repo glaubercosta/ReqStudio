@@ -328,3 +328,27 @@
     min-width: 44px;
   }
 }
+
+/* ============================================================
+   ANIMAÇÕES — Chat Components (Story 5.6, 5.7)
+   ============================================================ */
+
+.typing-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--rs-text-muted);
+  animation: typing-bounce 1.4s ease-in-out infinite;
+}
+
+@keyframes typing-bounce {
+  0%, 80%, 100% {
+    transform: translateY(0);
+    opacity: 0.4;
+  }
+  40% {
+    transform: translateY(-6px);
+    opacity: 1;
+  }
+}

@@ -45,6 +45,9 @@ class ErrorCode(StrEnum):
     DATABASE_ERROR = "DATABASE_ERROR"
     LLM_UNAVAILABLE = "LLM_UNAVAILABLE"
 
+    # --- Engine (Story 5.2+) ---
+    CONTEXT_ISOLATION_VIOLATION = "CONTEXT_ISOLATION_VIOLATION"
+
 
 class Severity(StrEnum):
     """Severidade do erro para o frontend renderizar o feedback adequado."""
@@ -166,4 +169,20 @@ def not_found_error(resource: str = "recurso") -> GuidedRecoveryError:
         actions=[{"label": "Voltar à lista", "route": "/projects"}],
         severity=Severity.WARNING,
         status_code=404,
+    )
+
+
+def context_isolation_error(detail: str = "") -> GuidedRecoveryError:
+    """500 interno — dados de outro projeto/tenant detectados no contexto da IA.
+
+    Este erro NUNCA deveria alcançar o usuário em condições normais.
+    Sua existência indica um bug de isolamento no pipeline.
+    """
+    return GuidedRecoveryError(
+        code=ErrorCode.CONTEXT_ISOLATION_VIOLATION,
+        message="Erro de segurança interna detectado.",
+        help=f"O sistema detectou uma inconsistência no isolamento de dados. Sua sessão está segura. Tente novamente.{' (' + detail + ')' if detail else ''}",
+        actions=[{"label": "Tentar novamente", "action": "retry"}],
+        severity=Severity.CRITICAL,
+        status_code=500,
     )

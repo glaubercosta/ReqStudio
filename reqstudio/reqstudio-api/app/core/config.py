@@ -43,6 +43,13 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
+    # --- LLM (Story 5.3) ---
+    LLM_MODEL: str = "anthropic/claude-sonnet-4-20250514"
+    LLM_FALLBACK_MODEL: str | None = None
+    LLM_TIMEOUT: int = 60  # seconds
+    LLM_MAX_CONTEXT_TOKENS: int = 8000
+    LLM_API_KEY: str = ""  # ANTHROPIC_API_KEY ou equivalente
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

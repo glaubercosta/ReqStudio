@@ -766,3 +766,31 @@ So that a IA analise codebase automaticamente (FR36, FR37).
 **Then** sistema analisa: linguagens, frameworks, estrutura, dependências
 **And** sumário gerado como documento de referência, disponível no Context Builder
 **And** análise assíncrona (processing → ready)
+
+---
+
+## Backlog V2 — Melhorias Identificadas em Testes
+
+### Enhancement: Perfil do Usuário para Personalização da IA
+
+**Origem:** Feedback do primeiro teste manual do Epic 5
+**Prioridade:** Alta (impacto direto na experiência)
+
+**Descrição:**
+Coletar preferências do usuário para personalizar a interação da IA: nome de exibição, tratamento preferido (Sr./Sra./nenhum), estilo de comunicação (direto vs. detalhado), expertise no domínio e idioma preferido.
+
+**Campos propostos:**
+
+| Campo | Exemplo | Uso pela IA |
+|-------|---------|-------------|
+| `display_name` | "Glauber" | Como quer ser chamado |
+| `honorific` | "Sr." / "Sra." / nenhum | Formalidade |
+| `communication_style` | "direto" / "detalhado" | Verbosidade |
+| `domain_expertise` | "engenharia de software" | Nível técnico |
+| `preferred_language` | "pt-BR" | Idioma |
+
+**Impacto:**
+- Novo modelo `UserProfile` (1:1 com `User`)
+- Wizard de onboarding pós-primeiro-login
+- Context Builder injeta perfil no system prompt
+- Tela de settings `/profile`

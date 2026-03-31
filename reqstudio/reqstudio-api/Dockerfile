@@ -1,7 +1,7 @@
 # Stage 1: Build
 FROM python:3.12-slim AS builder
 
-RUN apt-get update && apt-get install -y --no-install-recommends gcc libpq-dev \
+RUN apt-get update && apt-get install -y --no-install-recommends gcc libpq-dev libmagic1 \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
@@ -13,7 +13,7 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y --no-install-recommends libpq5 \
+RUN apt-get update && apt-get install -y --no-install-recommends libpq5 libmagic1 \
     && rm -rf /var/lib/apt/lists/*
 
 # Copia pacotes instalados em /usr/local (system-wide, acessível por qualquer usuário)

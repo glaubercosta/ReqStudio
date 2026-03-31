@@ -18,7 +18,9 @@ from app.core.error_handlers import register_error_handlers
 from app.core.middleware import RequestIdMiddleware, TenantMiddleware
 from app.core.telemetry import setup_telemetry
 from app.modules.auth.router import router as auth_router
+from app.modules.documents.router import router as documents_router
 from app.modules.projects.router import router as projects_router
+from app.modules.sessions.router import router as sessions_router
 
 logger = logging.getLogger(__name__)
 
@@ -68,8 +70,10 @@ def create_app() -> FastAPI:
     register_error_handlers(app)
 
     # --- Routes ---
-    app.include_router(auth_router)                            # já tem prefixo /api/v1/auth
-    app.include_router(projects_router, prefix="/api/v1")     # → /api/v1/projects
+    app.include_router(auth_router)
+    app.include_router(projects_router, prefix="/api/v1")
+    app.include_router(documents_router, prefix="/api/v1")
+    app.include_router(sessions_router, prefix="/api/v1")
 
     @app.get("/health")
     async def health():

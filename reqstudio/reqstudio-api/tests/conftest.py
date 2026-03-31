@@ -12,7 +12,10 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 
 from app.db.base import Base
 from app.modules.auth.models import RefreshToken, Tenant, User  # noqa: F401 — registers models in Base.metadata
+from app.modules.documents.models import Document, DocumentChunk  # noqa: F401
 from app.modules.projects.models import Project  # noqa: F401
+from app.modules.sessions.models import Session, Message  # noqa: F401
+from app.modules.workflows.models import Workflow, WorkflowStep, Agent  # noqa: F401
 from app.db.session import get_db
 from app.main import app
 
@@ -94,3 +97,46 @@ async def tenant_b_token(client: AsyncClient) -> dict[str, str]:
     login = await client.post("/api/v1/auth/login", json=_USER_B)
     assert login.status_code == 200, f"Login B failed: {login.text}"
     return {"access_token": login.json()["data"]["access_token"], "tenant_id": tenant_id}
+
+
+# ── Workflow seed fixtures (Story 5.1) ─────────────────────────────────────────
+
+SEED_AGENT_ID = "agent-analyst-001"
+SEED_WORKFLOW_ID = "wf-briefing-001"
+
+
+@pytest.fixture
+async def seed_workflows(db_session: AsyncSession) -> str:
+    """Popula o banco de teste com seed data de workflows BMAD.
+
+    Retorna o ID do workflow de briefing para uso nos testes.
+    """
+    agent = Agent(
+        id=SEED_AGENT_ID,
+        name="Mary",
+        role="analyst",
+        system_prompt="Você é Mary, analista de negócios do BMAD.",
+    )
+    db_session.add(agent)
+    await db_session.flush()
+
+    workflow = Workflow(
+        id=SEED_WORKFLOW_ID,
+        name="elicitation-briefing",
+        description="Workflow de briefing para elicitação de requisitos",
+        config={"max_iterations": 10, "phase": "discovery"},
+    )
+    db_session.add(workflow)
+    await db_session.flush()
+
+    step = WorkflowStep(
+        workflow_id=SEED_WORKFLOW_ID,
+        agent_id=SEED_AGENT_ID,
+        position=1,
+        prompt_template="Descreva o problema que este projeto precisa resolver.",
+        step_type="elicitation",
+    )
+    db_session.add(step)
+    await db_session.commit()
+    return SEED_WORKFLOW_ID
+

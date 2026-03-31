@@ -67,37 +67,37 @@ development_status:
   # ═══════════════════════════════════════════════════
   # Epic 3: Projetos como Espaços de Trabalho
   # ═══════════════════════════════════════════════════
-  epic-3: in-progress
+  epic-3: done
   3-1-crud-projetos-backend: done
   3-2-dashboard-projetos-frontend: done
   3-3-criacao-edicao-projeto-frontend: done
-  3-4-detalhe-projeto-boas-vindas-contextuais: in-progress
+  3-4-detalhe-projeto-boas-vindas-contextuais: done
   3-5-arquivamento-projetos-filtro-status: done
-  epic-3-retrospective: optional
+  epic-3-retrospective: done
 
   # ═══════════════════════════════════════════════════
   # Epic 4: Enriquecimento de Contexto — Importação de Documentos
   # ═══════════════════════════════════════════════════
-  epic-4: backlog
-  4-1-upload-parsing-documentos-backend: backlog
-  4-2-listagem-gerenciamento-documentos-projeto: backlog
-  4-3-interface-upload-documentos-frontend: backlog
-  epic-4-retrospective: optional
+  epic-4: done
+  4-1-upload-parsing-documentos-backend: done
+  4-2-listagem-gerenciamento-documentos-projeto: done
+  4-3-interface-upload-documentos-frontend: done
+  epic-4-retrospective: done
 
   # ═══════════════════════════════════════════════════
   # Epic 5: Sessão de Elicitação — O Core do Produto
   # ═══════════════════════════════════════════════════
-  epic-5: backlog
-  5-1-modelo-dados-sessoes-mensagens: backlog
-  5-2-context-builder-montagem-prompt-isolamento: backlog
-  5-3-litellm-integration-abstracao-multi-provider-streaming: backlog
-  5-4-elicitation-engine-orquestracao-sessao-workflow: backlog
-  5-5-sse-endpoint-streaming-respostas: backlog
-  5-6-tela-sessao-chat-split-tabbed-view: backlog
-  5-7-streaming-chat-sse-client-typing-indicator: backlog
-  5-8-pausar-retomar-sessao: backlog
-  5-9-modo-degradado-ia-indisponivel: backlog
-  epic-5-retrospective: optional
+  epic-5: done
+  5-1-modelo-dados-sessoes-mensagens: done
+  5-2-context-builder-montagem-prompt-isolamento: done
+  5-3-litellm-integration-abstracao-multi-provider-streaming: done
+  5-4-elicitation-engine-orquestracao-sessao-workflow: done
+  5-5-sse-endpoint-streaming-respostas: done
+  5-6-tela-sessao-chat-split-tabbed-view: done
+  5-7-streaming-chat-sse-client-typing-indicator: done
+  5-8-pausar-retomar-sessao: done
+  5-9-modo-degradado-ia-indisponivel: done
+  epic-5-retrospective: done
 
   # ═══════════════════════════════════════════════════
   # Epic 6: Artefatos — Geração, Visualização e Exportação

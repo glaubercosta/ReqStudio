@@ -16,6 +16,10 @@ import { ProjectModal } from '@/components/ProjectModal'
 import { ArchiveConfirm } from '@/components/ArchiveConfirm'
 import { useAuth } from '@/contexts/AuthContext'
 import { useProject } from '@/hooks/useProject'
+import { DocumentUpload } from '@/components/DocumentUpload'
+import { DocumentList } from '@/components/DocumentList'
+import { sessionsApi } from '@/services/sessionsApi'
+
 import { projectsQueryKey } from '@/hooks/useProjects'
 import { projectQueryKey } from '@/hooks/useProject'
 
@@ -235,6 +239,16 @@ export default function ProjectDetailPage() {
   const progressPct = getProgressPercent(checklist)
   const hasSessions = progressPct > 0
 
+  const handleStartSession = async () => {
+    if (!id) return
+    try {
+      const res = await sessionsApi.create(id)
+      navigate(`/sessions/${res.data.id}`)
+    } catch {
+      // Se falhar, fica na página
+    }
+  }
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
@@ -369,8 +383,24 @@ export default function ProjectDetailPage() {
               checklist={checklist}
               progressPct={progressPct}
               hasSessions={hasSessions}
-              onStart={() => {/* Epic 5 — LLM session */}}
+              onStart={handleStartSession}
             />
+
+            {/* Document Management Section (Story 4.3) - Only show when elicitation has begun */}
+            {hasSessions && (
+              <section className="mt-[var(--space-8)] border-t border-border pt-[var(--space-6)]">
+                <div className="mb-6">
+                  <h2 className="text-h2 font-semibold text-foreground">Documentos de Referência</h2>
+                  <p className="text-body-sm text-muted-foreground mt-1">
+                    Adicione SLAs, contratos, regulações ou regras de negócio existentes. Eles alimentarão o contexto da IA durante as sessões de elicitação.
+                  </p>
+                </div>
+                <div className="space-y-6">
+                  <DocumentUpload projectId={project.id} />
+                  <DocumentList projectId={project.id} />
+                </div>
+              </section>
+            )}
           </>
         )}
       </main>
