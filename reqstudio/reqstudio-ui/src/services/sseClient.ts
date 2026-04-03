@@ -7,9 +7,7 @@
  *   - We need typed JSON parsing
  */
 
-import { getAccessToken } from './apiClient'
-
-const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8001'
+import { API_BASE, getAccessToken } from './apiClient'
 
 export interface SSEChunk {
   content: string

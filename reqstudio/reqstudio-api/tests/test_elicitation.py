@@ -96,6 +96,11 @@ async def test_elicit_full_pipeline(client: AsyncClient, tenant_a_token, seed_wo
     assert messages[0]["content"] == "Quero criar um app de finanças"
     assert messages[1]["role"] == "assistant"
     assert messages[1]["content"] == "Olá! Vamos começar."
+    assert messages[1]["input_tokens"] == 50
+    assert messages[1]["output_tokens"] == 15
+    assert messages[1]["cost_usd"] == 0.001
+    assert messages[1]["latency_ms"] is not None
+    assert messages[1]["model"] == "mock"
 
 
 @pytest.mark.asyncio

@@ -76,3 +76,10 @@ If the agent cannot verify command execution directly:
 - Update the `task.md` with `[ ] Waiting for Manual Execution: [Command]`.
 - Do NOT proceed with dependent code changes until the USER provides the terminal output in the conversation.
 - **Verification Gate**: After the USER provides output, the agent MUST analyze it for errors before marking the task as done.
+
+### 7.3 Scope Lock (BMAD Agent Execution)
+- Every implementation cycle MUST start by selecting the BMAD workflow/agent (e.g., `bmad-dev-story`, `bmad-correct-course`) and explicitly listing target artifacts before editing.
+- Planned file list first: the agent must declare which files are expected to change and keep edits restricted to this list unless the user approves expansion.
+- After edits, run a scope check (`git status` or equivalent) and classify changes as: planned / benign tooling / out-of-scope.
+- If out-of-scope changes appear, STOP and request user direction before continuing.
+- Cache, dump, and local tooling outputs (e.g., `.mypy_cache`, `saida.txt`) must never be part of deliverables.

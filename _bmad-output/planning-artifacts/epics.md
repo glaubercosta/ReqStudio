@@ -86,6 +86,10 @@ Import PDF/MD, parsing, chunking, gerenciamento de docs.
 Sessão conversacional com IA, SSE streaming, duas fases, split/tabbed view.
 **FRs cobertos:** FR9-FR10, FR12-FR19. **NFRs:** NFR1, NFR4, NFR14, NFR15, NFR19.
 
+### Epic 5.5: Dívida Técnica e Fundações para Artefatos
+Action items críticos da Retro Epic 5 formalizados como pré-condições para o Epic 6. Retorno intencional ao ciclo do Epic 5.
+**FRs cobertos:** FR8, FR9 (parcial), FR15. **NFRs:** NFR11, NFR12.
+
 ### Epic 6: Artefatos — Geração, Visualização e Exportação
 JSON canônico, rendering dual, cobertura, export MD/JSON, versionamento.
 **FRs cobertos:** FR20-FR25. **NFRs:** NFR3, NFR20.
@@ -565,9 +569,142 @@ So that eu não perca trabalho por problemas técnicos (NFR14).
 
 ---
 
+## Epic 5.5: Dívida Técnica e Fundações para Artefatos
+
+Action items críticos da Retrospectiva do Epic 5, formalizados como pré-condições para o Epic 6. Retorno intencional ao ciclo do Epic 5 para honrar gaps identificados no teste real do produto.
+
+**Origem:** `epic-5-retro-2026-03-31.md` — Action Items A1–A5  
+**FRs cobertos:** FR8, FR9 (parcial), FR15. **NFRs:** NFR11, NFR12.
+
+### Story 5.5-1: System Prompts com Qualidade BMAD Real
+
+As a Ana (especialista de domínio),
+I want que a IA conduza a sessão com personalidade, técnicas de elicitação e regras claras,
+So that eu perceba diferença real entre o ReqStudio e um chatbot genérico (FR12, FR13, FR19).
+
+**Acceptance Criteria:**
+
+**Given** seed data de Agents e WorkflowSteps no banco
+**When** sessão de elicitação inicia
+**Then** system prompt do agente PM contém: persona definida, técnicas de elicitação (5 Whys, JTBD, cenários negativos), regras de verbosidade (máx 3 perguntas por turno), exemplos few-shot de boas respostas
+**And** Fase 1 (contextualização): tom de ouvinte ativo, sem interromper fluxo da Ana
+**And** Fase 2 (guiada): perguntas estruturadas, desafio baseado em docs, sinalização de transição
+**And** resposta curta e clara: sem bullet points desnecessários, sem repetir o que o usuário disse
+**And** testes: prompt length > 500 chars, keywords de personalidade presentes, few-shot examples incluídos
+
+**Origem:** Retro Epic 5 — Action Item A1 (🔴 Crítico)
+
+### Story 5.5-2: Retomar Sessão Existente na ProjectDetailPage
+
+As a Ana,
+I want que ao acessar meu projeto o sistema detecte sessões em andamento e me ofereça continuar,
+So that eu retome de onde parei sem criar uma sessão nova desnecessariamente (FR15, FR4).
+
+**Acceptance Criteria:**
+
+**Given** rota `/projects/{id}` com sessão `active` ou `paused` existente
+**When** ProjectDetailPage renderiza
+**Then** `GET /api/v1/projects/{id}/sessions?status=active,paused` retorna sessões existentes
+**And** se existir sessão → botão "Continuar sessão" → navega para `/sessions/{session_id}`
+**And** se não existir → botão "Iniciar elicitação" → cria nova sessão
+**And** WelcomeScreen exibe: última interação, % cobertura atual, próximo passo
+**And** `progress_summary` do projeto atualizado pelo Elicitation Engine após cada mensagem
+**And** testes: detecção ativa, detecção pausada, fallback sem sessão, progress_summary atualizado
+
+**Origem:** Retro Epic 5 — Action Item A2 (🔴 Alta)
+
+### Story 5.5-3: Migration Automática no Startup do Container
+
+As a desenvolvedor,
+I want que migrações Alembic sejam aplicadas automaticamente no startup,
+So that o banco de dados esteja sempre sincronizado com o schema atual sem intervenção manual.
+
+**Acceptance Criteria:**
+
+**Given** container `api` iniciando
+**When** FastAPI app factory executa
+**Then** `alembic upgrade head` executado automaticamente antes de aceitar requests
+**And** `alembic/env.py` importa todos os models de todos os módulos (auth, projects, sessions, engine, documents, artifacts)
+**And** startup falha com log claro se migration falhar (fail fast)
+**And** `docker-compose up` do zero resulta em schema completo sem intervenção manual
+**And** CI gate: `docker-compose up && alembic check` valida schema sincronizado
+**And** testes: startup com DB vazio, startup com schema desatualizado, rollback com erro
+
+**Origem:** Retro Epic 5 — Action Items A5 (🔴 Alta) + A6 (🟡 Média)
+
+### Story 5.5-4: Upload de Documento via ChatInput
+
+As a Ana,
+I want anexar um documento diretamente na conversa de elicitação,
+So that eu enriqueça o contexto da IA sem sair do chat (FR8).
+
+**Acceptance Criteria:**
+
+**Given** `ChatInput` na SessionPage
+**When** ícone 📎 clicado
+**Then** file picker abre (formatos: PDF, MD, DOCX, XLSX — máx 20MB)
+**And** mobile: usa Web Share API (com fallback para file picker tradicional)
+**And** upload via `POST /api/v1/projects/{id}/documents` (reutiliza Epic 4)
+**And** status inline no chat: "📄 Processando contrato.pdf..." → "✅ Pronto — adicionado ao contexto"
+**And** próxima mensagem do usuário já tem o doc disponível no Context Builder
+**And** erro → Guided Recovery inline (sem modal): "Arquivo muito grande. Tente um PDF menor."
+**And** testes: upload sucesso, erro MIME, erro tamanho, injeção no contexto, mobile fallback
+
+**Origem:** Retro Epic 5 — Action Item A3 (🟡 Média)
+
+### Story 5.5-5: Telemetria Baseline — Tokens e Custo por Mensagem
+
+As a Ana,
+I want ver quanto a sessão está consumindo de IA em tempo real,
+So that eu tenha transparência sobre o uso e custo da plataforma (NFR12).
+
+**Acceptance Criteria:**
+
+**Given** mensagem enviada e resposta finalizada (chunk `done: true`)
+**When** Elicitation Engine salva resposta
+**Then** colunas `input_tokens`, `output_tokens`, `cost_usd`, `model` salvas na tabela `messages` (role=assistant)
+**And** mini-widget visível no header da SessionPage: "💰 $0.02 · 1.2k tokens"
+**And** tooltip expandido: input tokens, output tokens, modelo usado, latência
+**And** sem sessão ativa: widget oculto
+**And** testes: persistência das métricas, widget renderizado, tooltip com breakdown, modelo correto
+
+**Origem:** Retro Epic 5 — Action Item A4 (🟡 Média)
+
+---
+
 ## Epic 6: Artefatos — Geração, Visualização e Exportação
 
 JSON canônico, rendering dual, cobertura por seção, export, versionamento.
+
+### Story 6.0: Gate de QA — Hardening de Sessões e Upload
+
+As a time de produto,
+I want fechar os gaps de teste críticos remanescentes da Sprint 5.5 antes de iniciar o core de artefatos,
+So that o Epic 6 comece sobre uma base validada e com menor risco de regressão.
+
+**Acceptance Criteria:**
+
+**Given** relatório `qa-audit-sprint-5-5.md`
+**When** o gate de hardening for executado
+**Then** `useProjectSessions.test.ts` deve testar o hook real (`useProjectSessions`) com `renderHook` + QueryClient, sem duplicar lógica de filtro no teste
+**And** existir teste de integração leve validando o callback chain `SessionPage -> ChatInput -> handleUploadSuccess -> sendMessage`
+**And** os testes novos devem falhar quando há regressão nesses fluxos
+**And** evidência de execução (output de teste) anexada no artefato da story
+
+### Story 6.0b: DoD com Checklist de Evidências e Handoff de Terminal
+
+As a Scrum Master e QA,
+I want formalizar no fluxo de desenvolvimento o checklist de evidências e o rito de handoff em Terminal Restricted Mode,
+So that cada story seja encerrada com prova objetiva e sem presunção de execução.
+
+**Acceptance Criteria:**
+
+**Given** `project-context.md` seção 7 e action item AI-3 da retro Epic 5.5
+**When** uma story for movida para `review` ou `done`
+**Then** o artefato da story deve incluir bloco "Evidências de Validação" com comandos e outputs relevantes
+**And** comandos críticos que dependem do usuário devem ser registrados como "Waiting for Manual Execution" no fluxo da story
+**And** nenhum fechamento de story ocorre sem evidência anexada na conversa e no arquivo da story
+**And** template/checklist de PR/review atualizado para refletir o novo DoD
 
 ### Story 6.1: Modelo de Artefato com JSON Canônico e Versionamento
 

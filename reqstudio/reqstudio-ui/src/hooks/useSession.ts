@@ -10,6 +10,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { API_BASE } from '@/services/apiClient'
 import { sessionsApi, type Message } from '@/services/sessionsApi'
 import { streamElicit, type SSEEvent } from '@/services/sseClient'
 
@@ -63,7 +64,7 @@ export function useSession({ sessionId }: UseSessionOptions) {
       if (document.visibilityState === 'hidden') {
         // Use sendBeacon for reliability on page close
         const token = localStorage.getItem('access_token')
-        const url = `${import.meta.env.VITE_API_URL ?? 'http://localhost:8001'}/api/v1/sessions/${sessionId}`
+        const url = `${API_BASE}/api/v1/sessions/${sessionId}`
         const body = JSON.stringify({ status: 'paused' })
         // fetch with keepalive for reliability on page close
         fetch(url, {

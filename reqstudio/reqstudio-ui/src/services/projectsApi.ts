@@ -3,9 +3,7 @@
  * Usa o mesmo fetch/interceptor de 401 do apiClient base.
  */
 
-import { getAccessToken, ReqStudioApiError } from './apiClient'
-
-const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8001'
+import { API_BASE, getAccessToken, ReqStudioApiError } from './apiClient'
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const headers: Record<string, string> = {

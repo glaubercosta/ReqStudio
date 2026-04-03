@@ -319,6 +319,29 @@ Incluir em TODA story de frontend o AC:
 ### O que aconteceu
 Durante a implementação das rotas de Documentos e de seus testes, o código inicial ignorou padrões estabelecidos no Epic 3. O agente original (ou o recém instanciado) tentou usar fixtures de Pytest (`client_a`, `client_b`) que não existiam ou não eram o padrão do `conftest.py` (que exigia envio de cabeçalhos de token genéricos), e quase gerou queries de banco sem a injeção estrita da clausula de TenantScope.
 
+---
+
+## Lição 12 — Fonte Única de Configuração Sensível via `.env`
+
+**Sprint / Story:** Epic 5.5 / Hardening Operacional  
+**Severidade:** Alta (causa falhas de conexão e risco de exposição de configuração)
+
+### O que aconteceu
+Havia portas hardcoded e inconsistentes no frontend (`8001` em alguns serviços e `8082` em outro). Em paralelo, o ambiente real usava `API_PORT` vindo de `.env` (`8082`), causando divergência e falhas intermitentes de conexão.
+
+### Causa raiz
+Ausência de regra explícita de governança para configuração sensível (portas, URLs de backend, chaves e segredos). Partes do código usavam defaults locais hardcoded em vez de depender de variáveis de ambiente.
+
+### Regra de ouro (para o agente)
+> **A fonte de verdade para portas, chaves de API e qualquer configuração de segurança é sempre o `.env` (ou secret manager equivalente no deploy).**
+
+### Padrão obrigatório
+1. Não hardcodar portas, endpoints, tokens ou segredos em código de aplicação
+2. Centralizar leitura de configuração em um único módulo por camada (ex.: `apiClient` no frontend)
+3. Propagar valores via variáveis de ambiente (`VITE_*` no frontend, settings no backend)
+4. Manter defaults apenas para desenvolvimento local e alinhados ao `.env` do projeto
+5. Registrar qualquer novo parâmetro sensível no `.env.example` (sem valores secretos reais)
+
 ### Causa raiz
 **O mito da "Onisciência" do Agente.** Acreditamos erroneamente que o agente "lê" toda a base de código a cada novo prompt. Na verdade, a janela de contexto vaza. Um agente novo que entra no meio do projeto tende a escrever código "padrão genérico de framework" (boilerplate de FastAPI/SQLAlchemy) se não for forçado a ler as regras arquiteturais locais ANTES de começar a codificar. O agente não sabia, "de cor", que neste projeto a regra de testes era usar `_auth(token)` ou que a segurança dependia do `TenantScope`.
 

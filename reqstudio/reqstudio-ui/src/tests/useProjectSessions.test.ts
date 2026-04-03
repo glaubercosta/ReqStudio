@@ -1,22 +1,27 @@
 /**
- * Testes do hook useProjectSessions — Story 5.5-2.
- *
- * Testes unitários estáticos: validam a lógica de filtro e ordenação
- * sem dependência de QueryClient real (evita problemas de ambiente).
+ * Testes do hook real useProjectSessions — Story 5.5-2.
  */
 
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { renderHook, waitFor } from '@testing-library/react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { createElement } from 'react'
 import type { Session } from '@/services/sessionsApi'
+import { useProjectSessions } from '@/hooks/useProjectSessions'
+import { sessionsApi } from '@/services/sessionsApi'
 
-// ── Helpers duplicados do hook (para teste isolado) ───────────────────────────
+vi.mock('@/services/sessionsApi', async () => {
+  const actual = await vi.importActual<typeof import('@/services/sessionsApi')>('@/services/sessionsApi')
+  return {
+    ...actual,
+    sessionsApi: {
+      ...actual.sessionsApi,
+      list: vi.fn(),
+    },
+  }
+})
 
-function filterResumable(sessions: Session[]): Session[] {
-  return sessions
-    .filter((s) => s.status === 'active' || s.status === 'paused')
-    .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
-}
-
-// ── Fixtures ──────────────────────────────────────────────────────────────────
+const mockList = sessionsApi.list as unknown as ReturnType<typeof vi.fn>
 
 const makeSession = (overrides: Partial<Session> = {}): Session => ({
   id: 'sess-1',
@@ -30,57 +35,67 @@ const makeSession = (overrides: Partial<Session> = {}): Session => ({
   ...overrides,
 })
 
-// ── Testes unitários da lógica de filtro ─────────────────────────────────────
-
-describe('useProjectSessions — lógica de filtro', () => {
-  it('retorna apenas sessões active e paused', () => {
-    const sessions = [
-      makeSession({ id: '1', status: 'active' }),
-      makeSession({ id: '2', status: 'paused' }),
-      makeSession({ id: '3', status: 'completed' }),
-    ]
-    const result = filterResumable(sessions)
-    expect(result).toHaveLength(2)
-    expect(result.map((s) => s.id)).toEqual(expect.arrayContaining(['1', '2']))
+function makeWrapper() {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: { retry: false },
+    },
   })
 
-  it('retorna lista vazia quando todas são completed', () => {
-    const sessions = [
-      makeSession({ id: '1', status: 'completed' }),
-      makeSession({ id: '2', status: 'completed' }),
-    ]
-    expect(filterResumable(sessions)).toHaveLength(0)
+  return function Wrapper({ children }: { children: React.ReactNode }) {
+    return createElement(QueryClientProvider, { client: queryClient }, children)
+  }
+}
+
+describe('useProjectSessions (hook real)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
   })
 
-  it('ordena por updated_at desc — mais recente primeiro', () => {
-    const sessions = [
-      makeSession({ id: 'old', status: 'active', updated_at: '2026-04-01T08:00:00Z' }),
-      makeSession({ id: 'new', status: 'paused', updated_at: '2026-04-02T12:00:00Z' }),
-    ]
-    const result = filterResumable(sessions)
-    expect(result[0].id).toBe('new')
+  it('retorna apenas active/paused e ordena por updated_at desc', async () => {
+    mockList.mockResolvedValueOnce({
+      data: {
+        items: [
+          makeSession({ id: 'completed', status: 'completed', updated_at: '2026-04-03T10:00:00Z' }),
+          makeSession({ id: 'old-active', status: 'active', updated_at: '2026-04-01T10:00:00Z' }),
+          makeSession({ id: 'new-paused', status: 'paused', updated_at: '2026-04-04T10:00:00Z' }),
+        ],
+      },
+    })
+
+    const { result } = renderHook(() => useProjectSessions('proj-1'), {
+      wrapper: makeWrapper(),
+    })
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+
+    expect(result.current.data?.map((s) => s.id)).toEqual(['new-paused', 'old-active'])
+    expect(mockList).toHaveBeenCalledWith('proj-1')
   })
 
-  it('retorna lista vazia quando não há sessões', () => {
-    expect(filterResumable([])).toHaveLength(0)
+  it('retorna vazio quando nao ha sessao retomavel', async () => {
+    mockList.mockResolvedValueOnce({
+      data: {
+        items: [
+          makeSession({ id: 'completed-1', status: 'completed' }),
+          makeSession({ id: 'completed-2', status: 'completed' }),
+        ],
+      },
+    })
+
+    const { result } = renderHook(() => useProjectSessions('proj-1'), {
+      wrapper: makeWrapper(),
+    })
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(result.current.data).toEqual([])
   })
 
-  it('AC 3 — fallback: sem sessão active/paused → lista vazia (botão Iniciar deve ser exibido)', () => {
-    const sessions = [makeSession({ id: '1', status: 'completed' })]
-    const resumable = filterResumable(sessions)
-    const activeSession = resumable[0] ?? null
-    expect(activeSession).toBeNull()
-  })
+  it('nao executa query sem projectId', () => {
+    renderHook(() => useProjectSessions(''), {
+      wrapper: makeWrapper(),
+    })
 
-  it('AC 2 — detecção ativa: sessão active retorna como primeira', () => {
-    const sessions = [makeSession({ id: 'sess-active', status: 'active' })]
-    const resumable = filterResumable(sessions)
-    expect(resumable[0].id).toBe('sess-active')
-  })
-
-  it('AC 2 — detecção pausada: sessão paused retorna como primeira', () => {
-    const sessions = [makeSession({ id: 'sess-paused', status: 'paused' })]
-    const resumable = filterResumable(sessions)
-    expect(resumable[0].id).toBe('sess-paused')
+    expect(mockList).not.toHaveBeenCalled()
   })
 })

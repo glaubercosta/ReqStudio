@@ -8,7 +8,7 @@
  *   4. Se refresh falhar → dispara evento 'auth:logout' → redirect /login
  */
 
-const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8001'
+export const API_BASE = import.meta.env.VITE_API_URL
 
 export interface ApiError {
   code: string

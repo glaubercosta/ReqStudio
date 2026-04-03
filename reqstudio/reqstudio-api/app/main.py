@@ -9,6 +9,9 @@ Inclui:
 """
 
 import logging
+import asyncio
+from contextlib import asynccontextmanager
+from typing import AsyncIterator
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -17,12 +20,22 @@ from app.core.config import settings
 from app.core.error_handlers import register_error_handlers
 from app.core.middleware import RequestIdMiddleware, TenantMiddleware
 from app.core.telemetry import setup_telemetry
+from app.db.migrations import run_migrations_on_startup
 from app.modules.auth.router import router as auth_router
 from app.modules.documents.router import router as documents_router
 from app.modules.projects.router import router as projects_router
 from app.modules.sessions.router import router as sessions_router
 
 logger = logging.getLogger(__name__)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:  # noqa: ARG001
+    """Application lifespan: run startup tasks before yielding to handlers."""
+    # Run Alembic in a worker thread to avoid nested event-loop issues.
+    await asyncio.to_thread(run_migrations_on_startup)
+    yield
+    # shutdown logic goes here if needed in the future
 
 
 def create_app() -> FastAPI:
@@ -35,6 +48,7 @@ def create_app() -> FastAPI:
         title="ReqStudio API",
         description="Plataforma de elicitação de requisitos assistida por IA",
         version="0.1.0",
+        lifespan=lifespan,
         docs_url="/docs" if settings.DEBUG else None,
         redoc_url="/redoc" if settings.DEBUG else None,
     )
@@ -62,6 +76,9 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
+    from app.modules.sessions.router import router as sessions_router
+    from app.modules.artifacts.router import router as artifacts_router
+
     # --- Custom Middleware ---
     app.add_middleware(TenantMiddleware)
     app.add_middleware(RequestIdMiddleware)
@@ -74,6 +91,7 @@ def create_app() -> FastAPI:
     app.include_router(projects_router, prefix="/api/v1")
     app.include_router(documents_router, prefix="/api/v1")
     app.include_router(sessions_router, prefix="/api/v1")
+    app.include_router(artifacts_router, prefix="/api/v1")
 
     @app.get("/health")
     async def health():

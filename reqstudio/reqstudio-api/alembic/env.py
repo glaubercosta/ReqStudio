@@ -18,6 +18,7 @@ from app.modules.documents.models import Document, DocumentChunk  # noqa: F401
 from app.modules.projects.models import Project  # noqa: F401
 from app.modules.sessions.models import Session, Message  # noqa: F401
 from app.modules.workflows.models import Workflow, WorkflowStep, Agent  # noqa: F401
+from app.modules.artifacts.models import Artifact, ArtifactVersion  # noqa: F401
 
 # Alembic Config object
 config = context.config

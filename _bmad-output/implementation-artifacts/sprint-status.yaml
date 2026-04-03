@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-03-29T18:47:00-03:00
-last_updated: 2026-04-03T11:03:00-03:00
+last_updated: 2026-04-03T16:45:00-03:00
 project: ReqStudio
 project_key: NOKEY
 tracking_system: file-system
@@ -115,7 +115,9 @@ development_status:
   # ═══════════════════════════════════════════════════
   # Epic 6: Artefatos — Geração, Visualização e Exportação
   # ═══════════════════════════════════════════════════
-  epic-6: backlog
+  epic-6: in-progress
+  6-0-gate-qa-hardening-sessoes-upload: done
+  6-0b-dod-checklist-evidencias-terminal-handoff: done
   6-1-modelo-artefato-json-canonico-versionamento: backlog
   6-2-renderizacao-dual-visao-negocio-tecnica: backlog
   6-3-cobertura-por-secao-artefato: backlog
