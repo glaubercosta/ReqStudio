@@ -49,10 +49,11 @@ async def list_sessions(
     project_id: str,
     page: int = Query(default=1, ge=1),
     size: int = Query(default=20, ge=1, le=100),
+    status: list[str] | None = Query(default=None, description="Filtrar por status (ex: active,paused)"),
     scope: TenantScope = Depends(get_tenant_scope),
 ) -> ApiResponse[SessionListResponse]:
-    """Lista sessões de um projeto com paginação."""
-    result = await service.list_sessions(scope, project_id=project_id, page=page, size=size)
+    """Lista sessões de um projeto com paginação. Aceita filtro opcional de status."""
+    result = await service.list_sessions(scope, project_id=project_id, page=page, size=size, status=status)
     return ApiResponse(data=result)
 
 

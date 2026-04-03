@@ -10,7 +10,7 @@ const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8001'
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    ...(init?.headers as Record<string, string> | undefined),
+    ...(init?.headers as Record<string, string> ?? {}),
   }
   const token = getAccessToken()
   if (token) headers['Authorization'] = `Bearer ${token}`

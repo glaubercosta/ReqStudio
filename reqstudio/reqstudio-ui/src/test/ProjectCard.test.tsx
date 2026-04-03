@@ -17,8 +17,8 @@ vi.mock('react-router-dom', async (importOriginal) => {
 
 // Mock projectsApi (para ArchiveConfirm dentro do card)
 vi.mock('@/services/projectsApi', async (importOriginal) => {
-  const actual = await importOriginal()
-  return { ...actual, projectsApi: { ...(actual as any).projectsApi, update: vi.fn() } }
+  const actual = await importOriginal<any>()
+  return { ...actual, projectsApi: { ...actual.projectsApi, update: vi.fn() } }
 })
 
 const mockProject: Project = {

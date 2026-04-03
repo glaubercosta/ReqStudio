@@ -12,7 +12,7 @@ import uuid
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import ForeignKey, Integer, JSON, String, Text
+from sqlalchemy import Float, ForeignKey, Integer, JSON, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base, TenantMixin
@@ -85,6 +85,11 @@ class Message(TenantMixin, Base):
     )
     content: Mapped[str] = mapped_column(Text, nullable=False)
     message_index: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    input_tokens: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
+    output_tokens: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
+    cost_usd: Mapped[float | None] = mapped_column(nullable=True, default=None)
+    latency_ms: Mapped[float | None] = mapped_column(Float, nullable=True, default=None)
+    model: Mapped[str | None] = mapped_column(String(100), nullable=True, default=None)
     metadata_: Mapped[dict[str, Any] | None] = mapped_column(
         "metadata", JSON, nullable=True, default=None,
     )

@@ -86,16 +86,24 @@ async def list_sessions(
     project_id: str,
     page: int = 1,
     size: int = 20,
+    status: list[str] | None = None,
 ) -> SessionListResponse:
-    """Lista sessões de um projeto do tenant com paginação."""
+    """Lista sessões de um projeto do tenant com paginação.
+
+    Args:
+        status: Opcional. Filtra por lista de status (ex: ['active', 'paused']).
+    """
     offset = (page - 1) * size
+
+    base_where = (Session.tenant_id == scope.tenant_id, Session.project_id == project_id)
 
     count_stmt = (
         select(func.count())
         .select_from(Session)
-        .where(Session.tenant_id == scope.tenant_id)
-        .where(Session.project_id == project_id)
+        .where(*base_where)
     )
+    if status:
+        count_stmt = count_stmt.where(Session.status.in_(status))
     total: int = await scope.db.scalar(count_stmt) or 0
 
     stmt = (
@@ -104,6 +112,8 @@ async def list_sessions(
         .offset(offset)
         .limit(size)
     )
+    if status:
+        stmt = stmt.where(Session.status.in_(status))
     rows = await scope.db.scalars(stmt)
 
     items = []

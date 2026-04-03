@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-03-29T18:47:00-03:00
-last_updated: 2026-03-30T11:27:00-03:00
+last_updated: 2026-04-03T11:03:00-03:00
 project: ReqStudio
 project_key: NOKEY
 tracking_system: file-system
@@ -98,6 +98,19 @@ development_status:
   5-8-pausar-retomar-sessao: done
   5-9-modo-degradado-ia-indisponivel: done
   epic-5-retrospective: done
+
+  # ═══════════════════════════════════════════════════
+  # Epic 5.5: Dívida Técnica e Fundações para Artefatos
+  # (Action items da Retro Epic 5 — pré-condições para Epic 6)
+  # Origem: epic-5-retro-2026-03-31.md, Action Items A1–A5
+  # ═══════════════════════════════════════════════════
+  epic-5-5: done
+  5-5-1-system-prompts-bmad-quality: done
+  5-5-2-retomar-sessao-projectdetailpage: done
+  5-5-3-migration-automatica-startup: done
+  5-5-4-upload-documento-chatinput: done
+  5-5-5-telemetria-baseline-tokens-custo: done
+  epic-5-5-retrospective: done
 
   # ═══════════════════════════════════════════════════
   # Epic 6: Artefatos — Geração, Visualização e Exportação

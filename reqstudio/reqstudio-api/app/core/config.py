@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     API_PORT: int = 8000
     API_HOST: str = "0.0.0.0"
     DEBUG: bool = False
+    TESTING: bool = False  # Set to True in test environments to skip migrations
 
     # --- Database ---
     DATABASE_URL: str = "postgresql+asyncpg://reqstudio:reqstudio@db:5432/reqstudio"

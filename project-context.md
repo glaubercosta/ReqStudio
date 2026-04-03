@@ -30,7 +30,7 @@ This document contains critical architectural rules and patterns that **all AI a
   - Backgrounds: `bg-background`, `bg-card`, `bg-muted`
   - Text: `text-foreground`, `text-muted-foreground`
   - Borders: `border-border`
-  - Feedback: `text-destructive`, `bg-destructive/10`, `text-emerald-500` (for success)
+  - Feedback: `text-destructive`, `bg-destructive/10`, `text-emerald-500` (for No Hardcoded Tailwind Colors)
 - **Dark Mode Support**: Using these semantic variables ensures the interface automatically adapts to Dark Mode without additional classes.
 
 ## 3. General Agent Directives
@@ -62,3 +62,17 @@ app/modules/<domain>/
 - The `ErrorCode` enum in `exceptions.py` is the single source of truth for error codes. Add new codes there, not inline.
 - Cross-tenant access MUST return 404 (not 403) — never reveal existence of resources across tenants.
 
+## 7. AI-Human Interaction Protocol (Terminal Restricted Mode)
+
+Due to IDE/Sandbox limitations in executing commands within Docker/Windows environments, agents MUST follow these rules:
+
+### 7.1 No Assumption of Command Success
+If the agent cannot verify command execution directly:
+- **Do NOT** assume a command passed (especially migrations, tests, or builds).
+- **Stop and Request**: Explicitly provide the EXACT command to the USER in a markdown block.
+- **Intent Documentation**: Explain the expected result of the command before the user runs it.
+
+### 7.2 Explicit Hand-off Rites
+- Update the `task.md` with `[ ] Waiting for Manual Execution: [Command]`.
+- Do NOT proceed with dependent code changes until the USER provides the terminal output in the conversation.
+- **Verification Gate**: After the USER provides output, the agent MUST analyze it for errors before marking the task as done.

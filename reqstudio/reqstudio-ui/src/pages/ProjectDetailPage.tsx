@@ -19,6 +19,8 @@ import { useProject } from '@/hooks/useProject'
 import { DocumentUpload } from '@/components/DocumentUpload'
 import { DocumentList } from '@/components/DocumentList'
 import { sessionsApi } from '@/services/sessionsApi'
+import { useProjectSessions } from '@/hooks/useProjectSessions'
+import type { Session } from '@/services/sessionsApi'
 
 import { projectsQueryKey } from '@/hooks/useProjects'
 import { projectQueryKey } from '@/hooks/useProject'
@@ -93,14 +95,29 @@ function WelcomeScreen({
   checklist,
   progressPct,
   hasSessions,
+  activeSession,
   onStart,
 }: {
   projectName: string
   checklist: ChecklistItem[]
   progressPct: number
   hasSessions: boolean
+  activeSession: Session | null
   onStart: () => void
 }) {
+  function formatRelativeTime(dateStr: string): string {
+    const diff = Date.now() - new Date(dateStr).getTime()
+    if (diff < 60_000) return 'agora mesmo'
+    
+    const minutes = Math.floor(diff / 60_000)
+    const hours = Math.floor(diff / 3_600_000)
+    const days = Math.floor(diff / 86_400_000)
+    const rtf = new Intl.RelativeTimeFormat('pt-BR', { numeric: 'auto' })
+    
+    if (minutes < 60) return rtf.format(-minutes, 'minute')
+    if (hours < 24) return rtf.format(-hours, 'hour')
+    return rtf.format(-days, 'day')
+  }
 
 
   return (
@@ -123,6 +140,11 @@ function WelcomeScreen({
               </h2>
               <p className="text-body-sm text-muted-foreground mt-[var(--space-1)]">
                 Você está a {100 - progressPct}% de completar a elicitação.
+                {activeSession && (
+                  <span className="block mt-0.5 text-caption" style={{ color: 'var(--rs-text-muted)' }}>
+                    Última atividade: {formatRelativeTime(activeSession.updated_at)}
+                  </span>
+                )}
               </p>
             </div>
 
@@ -237,13 +259,20 @@ export default function ProjectDetailPage() {
   const color = project ? domainColor(project.business_domain) : '#4F46E5'
   const checklist = buildChecklist(project?.progress_summary ?? null)
   const progressPct = getProgressPercent(checklist)
-  const hasSessions = progressPct > 0
+
+  const { data: resumableSessions } = useProjectSessions(id ?? '')
+  const activeSession: Session | null = resumableSessions?.[0] ?? null
+  const hasSessions = !!activeSession
 
   const handleStartSession = async () => {
     if (!id) return
     try {
-      const res = await sessionsApi.create(id)
-      navigate(`/sessions/${res.data.id}`)
+      if (activeSession) {
+        navigate(`/sessions/${activeSession.id}`)
+      } else {
+        const res = await sessionsApi.create(id)
+        navigate(`/sessions/${res.data.id}`)
+      }
     } catch {
       // Se falhar, fica na página
     }
@@ -383,6 +412,7 @@ export default function ProjectDetailPage() {
               checklist={checklist}
               progressPct={progressPct}
               hasSessions={hasSessions}
+              activeSession={activeSession}
               onStart={handleStartSession}
             />
 

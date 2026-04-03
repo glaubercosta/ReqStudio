@@ -13,6 +13,7 @@ import { useProject } from '@/hooks/useProject'
 import { ChatMessage } from '@/components/chat/ChatMessage'
 import { ChatInput } from '@/components/chat/ChatInput'
 import { TypingIndicator } from '@/components/chat/TypingIndicator'
+import { SessionTelemetryWidget } from '@/components/chat/SessionTelemetryWidget'
 import type { Message } from '@/services/sessionsApi'
 
 type Tab = 'chat' | 'artifact'
@@ -54,6 +55,17 @@ export default function SessionPage() {
     setActiveTab(tab)
     if (tab === 'artifact') setArtifactUpdated(false)
   }, [])
+
+  const handleUploadSuccess = useCallback(
+    (filename: string) => {
+      try {
+        sendMessage(`📎 ${filename} enviado e disponível para a IA.`)
+      } catch (err) {
+        console.error('[SessionPage] handleUploadSuccess: sendMessage falhou', err)
+      }
+    },
+    [sendMessage],
+  )
 
   if (!sessionId) {
     navigate('/projects')
@@ -114,8 +126,10 @@ export default function SessionPage() {
           </div>
         </div>
 
-        {/* Save indicator */}
-        <div className="flex items-center gap-2">
+        {/* Save indicator & Telemetry */}
+        <div className="flex items-center gap-4">
+          <SessionTelemetryWidget messages={messages} />
+          <div className="flex items-center gap-2">
           {isThinking && (
             <span className="text-caption" style={{ color: 'var(--rs-primary)' }}>
               Processando...
@@ -125,6 +139,7 @@ export default function SessionPage() {
             className="inline-block w-2 h-2 rounded-full"
             style={{ background: session?.status === 'completed' ? 'var(--rs-success)' : 'var(--rs-primary)' }}
           />
+          </div>
         </div>
       </div>
 
@@ -204,6 +219,8 @@ export default function SessionPage() {
             ? 'Sessão concluída'
             : 'Descreva seu projeto ou responda...'
         }
+        projectId={session?.project_id}
+        onUploadSuccess={handleUploadSuccess}
       />
     </div>
   )

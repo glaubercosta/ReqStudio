@@ -28,6 +28,11 @@ export interface Message {
   role: 'user' | 'assistant' | 'system'
   content: string
   message_index: number
+  input_tokens?: number
+  output_tokens?: number
+  cost_usd?: number
+  latency_ms?: number
+  model?: string
   created_at: string
 }
 

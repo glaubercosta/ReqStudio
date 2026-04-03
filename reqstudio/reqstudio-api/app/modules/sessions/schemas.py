@@ -66,6 +66,11 @@ class MessageResponse(BaseModel):
     role: str
     content: str
     message_index: int
+    input_tokens: int | None = None
+    output_tokens: int | None = None
+    cost_usd: float | None = None
+    latency_ms: float | None = None
+    model: str | None = None
     metadata_: dict[str, Any] | None = Field(None, alias="metadata_")
     created_at: datetime
 

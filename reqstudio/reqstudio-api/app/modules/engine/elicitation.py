@@ -13,7 +13,6 @@ Invariante de resiliência (architecture.md §486-489):
   Resposta salva COMPLETA ao final, independente do client estar conectado.
 """
 
-import json
 import logging
 from typing import AsyncGenerator
 
@@ -25,8 +24,9 @@ from app.db.tenant import TenantScope
 from app.integrations.llm_client import CompletionChunk, stream_completion
 from app.modules.engine.context_builder import build_context
 from app.modules.sessions.models import Message, Session, SESSION_STATUS_COMPLETED
-from app.modules.workflows.models import WorkflowStep
 from app.modules.auth.models import User
+from app.modules.workflows.models import WorkflowStep
+from app.modules.projects.models import Project
 
 logger = logging.getLogger(__name__)
 
@@ -108,17 +108,24 @@ async def elicit(
         if chunk.done:
             # ── Step 5: Save response (mensagem completa da IA) ──
             assistant_msg_index = await _next_message_index(scope, session_id)
+            metrics = chunk.metrics if chunk.metrics else None
             assistant_msg = Message(
                 session_id=session_id,
                 tenant_id=scope.tenant_id,
                 role="assistant",
                 content=full_response,
                 message_index=assistant_msg_index,
+                input_tokens=metrics.input_tokens if metrics else None,
+                output_tokens=metrics.output_tokens if metrics else None,
+                cost_usd=metrics.cost_usd if metrics else None,
+                latency_ms=metrics.latency_ms if metrics else None,
+                model=metrics.model if metrics else None,
             )
             scope.db.add(assistant_msg)
 
-            # ── Step 6: Update workflow position ──
+            # ── Step 6: Update workflow position e progress_summary ──
             await _advance_workflow(scope, session)
+            await _update_progress_summary(scope, session)
             await scope.db.commit()
 
             logger.info(
@@ -183,3 +190,48 @@ async def _advance_workflow(scope: TenantScope, session: Session) -> None:
             "Workflow completed",
             extra={"session_id": session.id, "total_steps": total_steps},
         )
+
+
+def _compute_progress_summary(workflow_position: dict | None) -> dict:
+    """Deriva progress_summary a partir da posição atual no workflow.
+
+    Mapeamento simples step → checklist (refinado no Epic 6).
+    Invariante: garante que 'step' seja um inteiro válido.
+    """
+    raw_step = (workflow_position or {}).get("current_step", 0)
+    try:
+        step = int(raw_step)
+    except (ValueError, TypeError):
+        step = 0
+
+    return {
+        "context":      step >= 1,
+        "stakeholders": step >= 2,
+        "goals":        step >= 3,
+        "flows":        step >= 4,
+        "nfr":          step >= 5,
+        "review":       False,  # Manual
+    }
+
+
+async def _update_progress_summary(scope: TenantScope, session: Session) -> None:
+    """Atualiza progress_summary do projeto baseado na posição do workflow.
+
+    Isolamento garantido: filtra por scope.tenant_id via scope.where_id.
+    """
+    project = await scope.db.scalar(scope.where_id(Project, session.project_id))
+    if not project:
+        logger.warning(
+            "Cannot update progress_summary: project not found",
+            extra={"session_id": session.id, "project_id": session.project_id},
+        )
+        return
+
+    project.progress_summary = _compute_progress_summary(session.workflow_position)
+    logger.info(
+        "progress_summary updated",
+        extra={
+            "project_id": project.id,
+            "progress": project.progress_summary,
+        },
+    )
