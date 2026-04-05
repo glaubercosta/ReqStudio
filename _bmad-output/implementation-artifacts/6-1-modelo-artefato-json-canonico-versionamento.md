@@ -108,6 +108,8 @@ gpt-5 (Codex)
 - Execução manual do usuário em 2026-04-05 após instalar `asyncpg` confirmou novo bloqueio de ambiente: `ModuleNotFoundError: No module named 'magic'` no import de `app/modules/documents/service.py`.
 - Execução manual do usuário em 2026-04-05 após instalar `python-magic-bin` confirmou novo bloqueio de ambiente: `ModuleNotFoundError: No module named 'litellm'` no import de `app/integrations/llm_client.py`.
 - Execução manual do usuário em 2026-04-05 no diretório raiz do monorepo retornou dois problemas de ambiente/execução: `.venv` sem `pip` (`No module named pip`) e path de testes inválido (`tests/test_artifacts.py` não encontrado fora de `reqstudio-api`).
+- 2026-04-05: Validação executada no diretório `reqstudio/reqstudio-api` com `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1` e plugin explícito (`-p pytest_asyncio.plugin`) retornando `12 passed`.
+- 2026-04-05: Validação repetida sem `-p` após ajuste de `pyproject.toml` (`addopts = "-p pytest_asyncio.plugin"`) retornando `12 passed`.
 
 ### Completion Notes List
 
@@ -118,6 +120,8 @@ gpt-5 (Codex)
 - Testes de artifacts atualizados para payload canônico (`metadata.total_coverage`).
 - Dependência `asyncpg` instalada com sucesso no ambiente local do usuário.
 - Dependência `python-magic-bin` instalada com sucesso no ambiente local do usuário.
+- Execução de regressão dos testes de artifacts concluída com sucesso (`12 passed`) após fix de carregamento do `pytest-asyncio`.
+- Story mantida em `in-progress` por rito BMAD até handoff formal para `review` com evidências anexadas.
 - [ ] Waiting for Manual Execution: `cd reqstudio/reqstudio-api && $env:DEBUG='false'; pytest tests/test_artifacts.py tests/test_artifacts_render.py tests/test_artifacts_coverage.py tests/test_artifacts_export.py -q`
 - [ ] Waiting for Manual Execution: `cd reqstudio/reqstudio-api && $env:DEBUG='false'; $env:PYTEST_DISABLE_PLUGIN_AUTOLOAD='1'; pytest -p pytest_asyncio tests/test_artifacts.py tests/test_artifacts_render.py tests/test_artifacts_coverage.py tests/test_artifacts_export.py -q`
 - [ ] Waiting for Manual Execution: `cd C:\Users\Glauber\codes\ReqStudio\reqstudio\reqstudio-api; python -m pip install asyncpg`
