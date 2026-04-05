@@ -45,8 +45,7 @@ async def test_render_business_view(client: AsyncClient, tenant_a_token):
         "sections": [
             {"id": "intro", "title": "Introdução", "content": "Texto de negócio.", "coverage": 1.0, "sources": []}
         ],
-        "metadata": {},
-        "total_coverage": 1.0
+        "metadata": {"total_coverage": 1.0}
     }
     await client.post(f"/api/v1/artifacts/{artifact_id}/update", json={"artifact_state": state}, headers=_auth(tenant_a_token))
     
@@ -71,8 +70,7 @@ async def test_render_technical_view_with_gherkin(client: AsyncClient, tenant_a_
         "sections": [
             {"id": "req-1", "title": "Login", "content": "Given user at login\nWhen enters pass\nThen redirect dashboard.", "coverage": 1.0, "sources": []}
         ],
-        "metadata": {},
-        "total_coverage": 1.0
+        "metadata": {"total_coverage": 1.0}
     }
     await client.post(f"/api/v1/artifacts/{artifact_id}/update", json={"artifact_state": state}, headers=_auth(tenant_a_token))
     
@@ -95,8 +93,7 @@ async def test_render_low_coverage_warning(client: AsyncClient, tenant_a_token):
         "sections": [
             {"id": "draft-sec", "title": "Ponto Obscuro", "content": "Só uma ideia...", "coverage": 0.1, "sources": []}
         ],
-        "metadata": {},
-        "total_coverage": 0.1
+        "metadata": {"total_coverage": 0.1}
     }
     await client.post(f"/api/v1/artifacts/{artifact_id}/update", json={"artifact_state": state}, headers=_auth(tenant_a_token))
     

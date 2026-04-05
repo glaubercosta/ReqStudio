@@ -29,8 +29,7 @@ async def _create_base_artifact(client: AsyncClient, token: dict) -> str:
     # 2. Create Artifact
     state = {
         "sections": [{"id": "s1", "title": "Sec", "content": "Cont", "coverage": 1.0, "sources": []}],
-        "metadata": {},
-        "total_coverage": 1.0
+        "metadata": {"total_coverage": 1.0}
     }
     a_res = await client.post(
         "/api/v1/artifacts/",

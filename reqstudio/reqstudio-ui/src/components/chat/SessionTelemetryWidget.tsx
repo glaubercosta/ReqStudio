@@ -5,6 +5,10 @@ interface Props {
   messages: Message[]
 }
 
+function normalizeCost(value: number): number {
+  return Number(value.toFixed(6))
+}
+
 export function SessionTelemetryWidget({ messages }: Props) {
   // Sum up tokens and cost memoized
   const { totalInput, totalOutput, totalCost, totalLatency, lastModel } = useMemo(() => {
@@ -26,7 +30,13 @@ export function SessionTelemetryWidget({ messages }: Props) {
       }
     })
 
-    return { totalInput: input, totalOutput: output, totalCost: cost, totalLatency: latency, lastModel: model }
+    return {
+      totalInput: input,
+      totalOutput: output,
+      totalCost: normalizeCost(cost),
+      totalLatency: latency,
+      lastModel: model,
+    }
   }, [messages])
 
   const totalTokens = totalInput + totalOutput
@@ -37,7 +47,7 @@ export function SessionTelemetryWidget({ messages }: Props) {
 
   const formatCost = (val: number) => {
     if (val === 0) return '$0.00'
-    if (val < 0.001) return `<$0.01` 
+    if (val < 0.001) return '<$0.01'
     return `$${val.toFixed(2)}`
   }
 

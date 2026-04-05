@@ -104,6 +104,37 @@ def test_system_prompt_contem_instrucao_de_transicao():
     )
 
 
+def test_system_prompt_exige_apresentacao_com_nome_e_papel():
+    """Story 6.0d: abertura deve exigir apresentação explícita com nome e papel."""
+    prompt = SEED_AGENT["system_prompt"].lower()
+    assert "sou mary" in prompt, "Prompt deve exigir apresentação explícita com nome da agente."
+    assert "analista" in prompt and "reqstudio" in prompt, (
+        "Prompt deve reforçar papel profissional da agente no ReqStudio."
+    )
+
+
+def test_system_prompt_exige_objetivo_e_estrutura_em_fases():
+    """Story 6.0d: abertura deve explicar objetivo + estrutura da entrevista."""
+    prompt = SEED_AGENT["system_prompt"].lower()
+    assert "objetivo da entrevista" in prompt, (
+        "Prompt deve instruir explicação do objetivo da entrevista na abertura."
+    )
+    assert "duas fases" in prompt and "contextualização" in prompt and "descoberta guiada" in prompt, (
+        "Prompt deve explicitar a estrutura em fases."
+    )
+
+
+def test_system_prompt_exige_sinalizacao_de_progresso_e_fechamento():
+    """Story 6.0d: persona deve sinalizar avanço e proximidade de encerramento."""
+    prompt = SEED_AGENT["system_prompt"].lower()
+    assert "sinalização de progresso" in prompt, (
+        "Prompt deve ter seção dedicada para sinalização de progresso."
+    )
+    assert "proximidade de fechamento" in prompt or "próximos passos" in prompt, (
+        "Prompt deve orientar sinalização de encerramento com próximos passos."
+    )
+
+
 def test_seed_tem_cinco_steps():
     """AC 3, 5: seed deve ter exatamente 5 steps de elicitação."""
     assert len(SEED_STEPS) == 5, (

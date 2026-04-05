@@ -17,7 +17,7 @@ export function ChatMessage({ message, isStreaming }: ChatMessageProps) {
 
   return (
     <div
-      className={`flex gap-3 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}
+      className={`flex gap-3 min-w-0 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}
       style={{ marginBottom: 'var(--space-3)' }}
     >
       {/* Avatar */}
@@ -39,7 +39,7 @@ export function ChatMessage({ message, isStreaming }: ChatMessageProps) {
 
       {/* Bubble */}
       <div
-        className={`relative max-w-[80%] rounded-2xl px-4 py-3 ${isStreaming ? 'animate-pulse' : ''}`}
+        className={`relative min-w-0 max-w-[80%] rounded-2xl px-4 py-3 ${isStreaming ? 'animate-pulse' : ''}`}
         style={{
           background: isUser ? 'var(--rs-user-message)' : 'var(--rs-surface)',
           color: isUser ? 'white' : 'var(--rs-text-primary)',
@@ -47,9 +47,13 @@ export function ChatMessage({ message, isStreaming }: ChatMessageProps) {
           fontSize: 'var(--text-body)',
           lineHeight: 'var(--leading-body)',
           borderRadius: isUser ? '20px 20px 4px 20px' : '20px 20px 20px 4px',
+          maxHeight: '60vh',
+          overflowY: 'auto',
         }}
       >
-        <div className="whitespace-pre-wrap break-words">{message.content}</div>
+        <div className="whitespace-pre-wrap break-words" style={{ overflowWrap: 'anywhere' }}>
+          {message.content}
+        </div>
         {isStreaming && (
           <span
             className="inline-block ml-1"

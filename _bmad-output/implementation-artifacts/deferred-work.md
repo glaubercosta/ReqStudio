@@ -15,3 +15,7 @@
 ## Deferred from: code review of 5-5-5-telemetria-baseline-tokens-custo.md (2026-04-03)
 
 - [x] [Review][Defer] Migration Race Condition in Multi-node [app/main.py:199] — deferred, pre-existing
+
+## Deferred from: code review of 6-0c-hardening-ux-chat-confiabilidade-sessao.md (2026-04-03)
+
+- [x] [Review][Defer] Classes/coros hardcoded pré-existentes em componentes já existentes [reqstudio/reqstudio-ui/src/components/chat/SessionTelemetryWidget.tsx:61] — deferred, pre-existing

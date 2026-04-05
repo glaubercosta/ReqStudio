@@ -15,6 +15,7 @@ import {
   useState,
   type ReactNode,
 } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import {
   AUTH_LOGOUT_EVENT,
   authApi,
@@ -37,6 +38,7 @@ interface AuthContextValue extends AuthState {
 const AuthContext = createContext<AuthContextValue | null>(null)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const queryClient = useQueryClient()
   const [state, setState] = useState<AuthState>({
     user: null,
     isAuthenticated: false,
@@ -53,6 +55,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setAccessToken(res.data.access_token)
         const me = await authApi.me()
         if (mounted) {
+          queryClient.clear()
           setState({ user: me.data, isAuthenticated: true, isLoading: false })
         }
       } catch {
@@ -71,11 +74,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const handleForceLogout = () => {
       setAccessToken(null)
+      queryClient.clear()
       setState({ user: null, isAuthenticated: false, isLoading: false })
     }
     window.addEventListener(AUTH_LOGOUT_EVENT, handleForceLogout)
     return () => window.removeEventListener(AUTH_LOGOUT_EVENT, handleForceLogout)
-  }, [])
+  }, [queryClient])
 
   // ── Actions ─────────────────────────────────────────────────────────────────
 
@@ -83,8 +87,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const res = await authApi.login({ email, password })
     setAccessToken(res.data.access_token)
     const me = await authApi.me()
+    queryClient.clear()
     setState({ user: me.data, isAuthenticated: true, isLoading: false })
-  }, [])
+  }, [queryClient])
 
   const register = useCallback(async (email: string, password: string) => {
     await authApi.register({ email, password })
@@ -95,8 +100,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(async () => {
     await authApi.logout()
     setAccessToken(null)
+    queryClient.clear()
     setState({ user: null, isAuthenticated: false, isLoading: false })
-  }, [])
+  }, [queryClient])
 
   return (
     <AuthContext.Provider value={{ ...state, login, register, logout }}>

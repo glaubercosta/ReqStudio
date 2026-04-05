@@ -194,6 +194,27 @@ Tentativa de executar gate automático de Policy Mode (`seprocess/scaffold/check
 - Não regressão: com execução pontual `TESTING=true`, migrations são puladas; com `TESTING=false`, migrations são executadas.
 - Observação: ambiente atual mantém falha de startup/saúde (`curl /health` e `/docs` com `Empty reply from server`) e ausência de `"Application startup complete"` nos logs. Este ponto ficou registrado como pendência técnica separada do hardening de env.
 
+### Addendum II — UX Chat + Sessão + Persona BMAD (2026-04-03)
+
+**Trigger:** primeiras impressões do teste manual pós-login, com dois pontos críticos priorizados pelo usuário:
+- Upload/documento no chat com comportamento inativo
+- Expiração de sessão percebida como abrupta durante uso curto (3-4 min)
+
+**Decisão de escopo (aprovada):**
+- Manter a execução dentro do Epic 6 para evitar vai-e-volta entre sprints
+- Inserir dois novos gates antes da Story 6.1:
+  - `6.0c Hardening de UX do Chat e Confiabilidade de Sessão`
+  - `6.0d Fidelidade da Persona BMAD na Elicitação`
+
+**Justificativa de coerência com Epic 6:**
+- Não desvia do objetivo de artefatos; fortalece o fluxo de entrada da elicitação que alimenta os artefatos
+- Reduz risco de retrabalho em 6.1–6.5 por problemas de UX/core loop ainda abertos
+- Preserva momentum com correções de alto impacto em retenção e percepção de qualidade
+
+**Observação de priorização:**
+- `custo/tokens` tratado como ajuste de consistência de arredondamento dentro de `6.0c` (não como épico separado)
+- Persona configurada para baseline "100% BMAD" no início da conversa, com progressão e sinalização de fechamento explícitas
+
 ---
 
 **Solicitação de aprovação:** Você aprova esta Sprint Change Proposal para execução (`yes/no/revise`)?

@@ -11,6 +11,18 @@ import { render } from '@/test/utils'
 import { AuthProvider, useAuth } from '@/contexts/AuthContext'
 import * as apiClientModule from '@/services/apiClient'
 
+const clearQueryCache = vi.fn()
+
+vi.mock('@tanstack/react-query', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@tanstack/react-query')>()
+  return {
+    ...actual,
+    useQueryClient: () => ({
+      clear: clearQueryCache,
+    }),
+  }
+})
+
 // ── Mock authApi ──────────────────────────────────────────────────────────────
 
 vi.mock('@/services/apiClient', async (importOriginal) => {
@@ -84,6 +96,7 @@ describe('AuthContext — silent refresh', () => {
       expect(screen.getByTestId('auth').textContent).toBe('true')
       expect(screen.getByTestId('email').textContent).toBe('test@reqstudio.com')
     })
+    expect(clearQueryCache).toHaveBeenCalled()
   })
 })
 
@@ -106,6 +119,7 @@ describe('AuthContext — login', () => {
       expect(screen.getByTestId('auth').textContent).toBe('true')
       expect(screen.getByTestId('email').textContent).toBe('test@reqstudio.com')
     })
+    expect(clearQueryCache).toHaveBeenCalled()
   })
 })
 
@@ -127,6 +141,7 @@ describe('AuthContext — logout', () => {
       expect(screen.getByTestId('auth').textContent).toBe('false')
       expect(screen.getByTestId('email').textContent).toBe('none')
     })
+    expect(clearQueryCache).toHaveBeenCalled()
   })
 
   it('força logout ao receber evento auth:logout', async () => {
@@ -140,6 +155,7 @@ describe('AuthContext — logout', () => {
     await waitFor(() => {
       expect(screen.getByTestId('auth').textContent).toBe('false')
     })
+    expect(clearQueryCache).toHaveBeenCalled()
   })
 })
 
