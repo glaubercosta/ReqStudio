@@ -53,6 +53,10 @@ async function refreshAccessToken(): Promise<string | null> {
   return token
 }
 
+export async function refreshAccessTokenOrNull(): Promise<string | null> {
+  return refreshAccessToken()
+}
+
 export async function request<T>(
   path: string,
   init?: RequestInit,

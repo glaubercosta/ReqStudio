@@ -5,12 +5,12 @@
  *   - TanStack Query para session data e messages
  *   - SSE client para streaming de respostas
  *   - Estado local para typing indicator e streaming content
- *   - Auto-pause on exit / auto-resume on mount (Story 5.8)
+ *   - Auto-resume de sessão pausada
+ *   - Timeout de inatividade do usuário (Story 6.0c): 30 min
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { API_BASE } from '@/services/apiClient'
 import { sessionsApi, type Message } from '@/services/sessionsApi'
 import { streamElicit, type SSEEvent } from '@/services/sseClient'
 
@@ -23,12 +23,32 @@ export interface StreamingMessage {
   isStreaming: boolean
 }
 
+export interface SessionUiError {
+  code: string
+  message: string
+}
+
+export const INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000
+const LAST_ACTIVITY_STORAGE_PREFIX = 'session_last_activity_'
+
+export function isInactivityExpired(
+  lastActivityAtMs: number,
+  nowMs: number,
+  timeoutMs = INACTIVITY_TIMEOUT_MS,
+): boolean {
+  return nowMs - lastActivityAtMs >= timeoutMs
+}
+
 export function useSession({ sessionId }: UseSessionOptions) {
   const queryClient = useQueryClient()
   const [isThinking, setIsThinking] = useState(false)
   const [streamingMessage, setStreamingMessage] = useState<StreamingMessage | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<SessionUiError | null>(null)
+  const [sessionTimedOut, setSessionTimedOut] = useState(false)
+  const [sessionEndCode, setSessionEndCode] = useState<string | null>(null)
   const abortRef = useRef<AbortController | null>(null)
+  const lastActivityAtRef = useRef<number>(Date.now())
+  const inactivityTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // ── Session data ──
   const sessionQuery = useQuery({
@@ -46,54 +66,147 @@ export function useSession({ sessionId }: UseSessionOptions) {
 
   const messages: Message[] = messagesQuery.data?.data?.items ?? []
   const session = sessionQuery.data?.data ?? null
+  const storageKey = `${LAST_ACTIVITY_STORAGE_PREFIX}${sessionId}`
 
-  // ── Auto-pause on exit / resume on mount (Story 5.8) ──
+  const getPersistedLastActivity = useCallback((): number => {
+    if (!sessionId) return Date.now()
+    const raw = window.sessionStorage.getItem(storageKey)
+    if (!raw) return Date.now()
+    const parsed = Number(raw)
+    return Number.isFinite(parsed) ? parsed : Date.now()
+  }, [sessionId, storageKey])
+
+  const clearInactivityTimer = useCallback(() => {
+    if (inactivityTimerRef.current) {
+      clearTimeout(inactivityTimerRef.current)
+      inactivityTimerRef.current = null
+    }
+  }, [])
+
+  const triggerInactivityTimeout = useCallback(async () => {
+    setSessionTimedOut(true)
+    setSessionEndCode('SESSION_INACTIVITY_TIMEOUT')
+    setIsThinking(false)
+    setStreamingMessage(null)
+    setError({
+      code: 'SESSION_INACTIVITY_TIMEOUT',
+      message: 'Sessão expirada após 30 minutos de inatividade. Faça login novamente para retomar.',
+    })
+    abortRef.current?.abort()
+    window.sessionStorage.removeItem(storageKey)
+
+    if (session?.status === 'active') {
+      await sessionsApi.updateStatus(sessionId, 'paused').catch(() => {
+        // best effort; não bloquear UX por falha de persistência no pause
+      })
+      queryClient.invalidateQueries({ queryKey: ['session', sessionId] })
+    }
+  }, [queryClient, session?.status, sessionId, storageKey])
+
+  const scheduleInactivityTimer = useCallback(() => {
+    clearInactivityTimer()
+    inactivityTimerRef.current = setTimeout(async () => {
+      if (isInactivityExpired(lastActivityAtRef.current, Date.now())) {
+        await triggerInactivityTimeout()
+      }
+    }, INACTIVITY_TIMEOUT_MS)
+  }, [clearInactivityTimer, triggerInactivityTimeout])
+
+  const markUserActivity = useCallback(() => {
+    if (session?.status === 'completed') return
+    const now = Date.now()
+    lastActivityAtRef.current = now
+    if (sessionId) {
+      window.sessionStorage.setItem(storageKey, String(now))
+    }
+    scheduleInactivityTimer()
+  }, [scheduleInactivityTimer, session?.status, sessionId, storageKey])
+
+  // ── Auto-resume de sessão pausada ──
   useEffect(() => {
     if (!sessionId || !session) return
     if (session.status === 'completed') return
+    if (sessionTimedOut) return
 
-    // Resume if paused
     if (session.status === 'paused') {
-      sessionsApi.updateStatus(sessionId, 'active').then(() => {
-        queryClient.invalidateQueries({ queryKey: ['session', sessionId] })
-      }).catch(() => { /* silenciar erros de resume */ })
+      sessionsApi.updateStatus(sessionId, 'active')
+        .then(() => {
+          queryClient.invalidateQueries({ queryKey: ['session', sessionId] })
+        })
+        .catch(() => {
+          // silenciar erros de resume; UX já trata falhas por erro visível
+        })
     }
-
-    // Pause on page hide/close
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'hidden') {
-        // Use sendBeacon for reliability on page close
-        const token = localStorage.getItem('access_token')
-        const url = `${API_BASE}/api/v1/sessions/${sessionId}`
-        const body = JSON.stringify({ status: 'paused' })
-        // fetch with keepalive for reliability on page close
-        fetch(url, {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
-          body,
-          keepalive: true,
-          credentials: 'include',
-        }).catch(() => { /* best effort */ })
-      }
-    }
-
-    document.addEventListener('visibilitychange', handleVisibilityChange)
 
     return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange)
-      // Pause on unmount (navigating away)
+      // Pause on unmount (navigating away) — best effort
       if (session.status === 'active') {
         sessionsApi.updateStatus(sessionId, 'paused').catch(() => {})
       }
     }
-  }, [sessionId, session?.status, session, queryClient])
+  }, [sessionId, session?.status, session, queryClient, sessionTimedOut])
+
+  // ── Inatividade do usuário (30 min) ──
+  useEffect(() => {
+    if (!sessionId || !session || session.status === 'completed') return
+    if (sessionTimedOut) return
+
+    lastActivityAtRef.current = getPersistedLastActivity()
+    scheduleInactivityTimer()
+
+    const onActivity = () => markUserActivity()
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        const now = Date.now()
+        if (isInactivityExpired(lastActivityAtRef.current, now)) {
+          void triggerInactivityTimeout()
+          return
+        }
+        scheduleInactivityTimer()
+      }
+    }
+
+    window.addEventListener('pointerdown', onActivity, { passive: true })
+    window.addEventListener('keydown', onActivity, { passive: true })
+    window.addEventListener('scroll', onActivity, { passive: true })
+    document.addEventListener('visibilitychange', onVisibilityChange)
+
+    return () => {
+      clearInactivityTimer()
+      window.removeEventListener('pointerdown', onActivity)
+      window.removeEventListener('keydown', onActivity)
+      window.removeEventListener('scroll', onActivity)
+      document.removeEventListener('visibilitychange', onVisibilityChange)
+    }
+  }, [
+    clearInactivityTimer,
+    getPersistedLastActivity,
+    markUserActivity,
+    scheduleInactivityTimer,
+    session,
+    sessionId,
+    sessionTimedOut,
+    triggerInactivityTimeout,
+  ])
 
   // ── Send message (SSE streaming) ──
   const sendMessage = useCallback(async (content: string) => {
-    if (!content.trim() || isThinking) return
+    if (!content.trim() || isThinking || sessionTimedOut) {
+      if (sessionTimedOut) {
+        const expiredCode = sessionEndCode === 'SESSION_EXPIRED'
+          ? 'SESSION_EXPIRED'
+          : 'SESSION_INACTIVITY_TIMEOUT'
+        setError({
+          code: expiredCode,
+          message: expiredCode === 'SESSION_EXPIRED'
+            ? 'Sua sessão expirou. Faça login novamente para retomar.'
+            : 'Sessão expirada após 30 minutos de inatividade. Faça login novamente para retomar.',
+        })
+      }
+      return
+    }
+
+    markUserActivity()
 
     // Optimistic: add user message immediately
     const optimisticUserMsg: Message = {
@@ -126,7 +239,7 @@ export function useSession({ sessionId }: UseSessionOptions) {
     try {
       await streamElicit(sessionId, content, (event: SSEEvent) => {
         if (event.type === 'message') {
-          setStreamingMessage(prev => ({
+          setStreamingMessage((prev) => ({
             content: (prev?.content ?? '') + event.data.content,
             isStreaming: true,
           }))
@@ -138,19 +251,34 @@ export function useSession({ sessionId }: UseSessionOptions) {
           queryClient.invalidateQueries({ queryKey: ['messages', sessionId] })
           queryClient.invalidateQueries({ queryKey: ['session', sessionId] })
         } else if (event.type === 'error') {
-          setError(event.data.message ?? 'Erro ao processar resposta da IA.')
+          const isExpired = event.data.code === 'SESSION_EXPIRED'
+          if (isExpired) {
+            setSessionEndCode('SESSION_EXPIRED')
+          }
+          setError({
+            code: event.data.code ?? 'STREAM_ERROR',
+            message: event.data.message ?? 'Erro ao processar resposta da IA.',
+          })
+          if (isExpired) {
+            setSessionTimedOut(true)
+          }
           setIsThinking(false)
           setStreamingMessage(null)
+          queryClient.invalidateQueries({ queryKey: ['messages', sessionId] })
         }
       }, abortRef.current.signal)
     } catch (err) {
       if ((err as Error).name !== 'AbortError') {
-        setError('Conexão perdida. Tente novamente.')
+        setError({
+          code: 'STREAM_ERROR',
+          message: 'Conexão perdida. Tente novamente.',
+        })
         setIsThinking(false)
         setStreamingMessage(null)
+        queryClient.invalidateQueries({ queryKey: ['messages', sessionId] })
       }
     }
-  }, [sessionId, messages.length, isThinking, queryClient])
+  }, [sessionId, messages.length, isThinking, queryClient, markUserActivity, sessionTimedOut, sessionEndCode])
 
   // ── Cancel ──
   const cancel = useCallback(() => {
@@ -175,6 +303,7 @@ export function useSession({ sessionId }: UseSessionOptions) {
     sendMessage,
     cancel,
     pause,
+    markUserActivity,
     isLoadingSession: sessionQuery.isLoading,
     isLoadingMessages: messagesQuery.isLoading,
   }

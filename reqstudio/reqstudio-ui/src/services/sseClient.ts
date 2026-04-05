@@ -7,7 +7,13 @@
  *   - We need typed JSON parsing
  */
 
-import { API_BASE, getAccessToken } from './apiClient'
+import {
+  API_BASE,
+  AUTH_LOGOUT_EVENT,
+  getAccessToken,
+  refreshAccessTokenOrNull,
+  setAccessToken,
+} from './apiClient'
 
 export interface SSEChunk {
   content: string
@@ -44,25 +50,50 @@ export async function streamElicit(
   onEvent: (event: SSEEvent) => void,
   signal?: AbortSignal,
 ): Promise<void> {
-  const token = getAccessToken()
+  const createRequest = async () => {
+    const token = getAccessToken()
+    return fetch(`${API_BASE}/api/v1/sessions/${sessionId}/elicit`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'text/event-stream',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({ content }),
+      credentials: 'include',
+      signal,
+    })
+  }
 
-  const res = await fetch(`${API_BASE}/api/v1/sessions/${sessionId}/elicit`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Accept': 'text/event-stream',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-    body: JSON.stringify({ content }),
-    credentials: 'include',
-    signal,
-  })
+  let res = await createRequest()
+
+  // Access token expirou durante uso ativo: tenta refresh e repete 1x
+  if (res.status === 401) {
+    const refreshed = await refreshAccessTokenOrNull()
+    if (refreshed) {
+      res = await createRequest()
+    } else {
+      setAccessToken(null)
+      window.dispatchEvent(new CustomEvent(AUTH_LOGOUT_EVENT))
+    }
+  }
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({}))
+    const defaultMessage = res.status === 401
+      ? 'Sua sessão expirou. Faça login novamente para retomar.'
+      : res.statusText
+    const defaultCode = res.status === 401 ? 'SESSION_EXPIRED' : 'HTTP_ERROR'
+    if (res.status === 401) {
+      setAccessToken(null)
+      window.dispatchEvent(new CustomEvent(AUTH_LOGOUT_EVENT))
+    }
     onEvent({
       type: 'error',
-      data: { code: body?.error?.code ?? 'HTTP_ERROR', message: body?.error?.message ?? res.statusText },
+      data: {
+        code: body?.error?.code ?? defaultCode,
+        message: body?.error?.message ?? defaultMessage,
+      },
     })
     return
   }
