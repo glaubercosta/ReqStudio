@@ -5,7 +5,9 @@ import json
 from fastapi import APIRouter, Depends, Query
 from fastapi.responses import StreamingResponse
 
+from app.core.dependencies import get_current_user
 from app.db.tenant import TenantScope, get_tenant_scope
+from app.modules.auth.models import User
 from app.modules.engine.elicitation import elicit
 from app.modules.sessions import service
 from app.modules.sessions.schemas import (
@@ -125,6 +127,7 @@ async def elicit_stream(
     session_id: str,
     payload: MessageCreate,
     scope: TenantScope = Depends(get_tenant_scope),
+    current_user: User = Depends(get_current_user),
 ) -> StreamingResponse:
     """Endpoint SSE: envia mensagem e recebe resposta da IA em streaming.
 
@@ -136,7 +139,12 @@ async def elicit_stream(
 
     async def _sse_generator():
         try:
-            async for chunk in elicit(scope, session_id, payload.content):
+            async for chunk in elicit(
+                scope,
+                session_id,
+                payload.content,
+                user_name=getattr(current_user, "display_name", None) or current_user.email,
+            ):
                 if chunk.done:
                     data = json.dumps({
                         "content": "",
@@ -171,4 +179,3 @@ async def elicit_stream(
             "X-Accel-Buffering": "no",
         },
     )
-

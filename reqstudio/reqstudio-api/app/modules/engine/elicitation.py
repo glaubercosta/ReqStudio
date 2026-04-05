@@ -35,6 +35,7 @@ async def elicit(
     scope: TenantScope,
     session_id: str,
     user_message: str,
+    user_name: str | None = None,
 ) -> AsyncGenerator[CompletionChunk, None]:
     """Executa um ciclo de elicitação: recebe input do user, retorna stream da IA.
 
@@ -75,18 +76,23 @@ async def elicit(
         extra={"session_id": session_id, "message_index": user_msg_index},
     )
 
-    # ── Step 3: Load user name ──
-    user = await scope.db.scalar(
-        select(User).where(User.tenant_id == scope.tenant_id)
-    )
-    user_name = user.email.split('@')[0].replace('.', ' ').title() if user else None
+    # ── Step 3: Resolve display name (prefer explicit display name over email prefix) ──
+    resolved_user_name = _resolve_user_display_name(user_name)
+    if not resolved_user_name:
+        # Fallback defensivo para fluxos antigos que não repassam user_name no endpoint
+        user = await scope.db.scalar(
+            select(User).where(User.tenant_id == scope.tenant_id)
+        )
+        if user:
+            raw_display_name = getattr(user, "display_name", None)
+            resolved_user_name = _resolve_user_display_name(raw_display_name or user.email)
 
     # ── Step 4: Context Builder ──
     context = await build_context(
         scope,
         session_id,
         max_tokens=settings.LLM_MAX_CONTEXT_TOKENS,
-        user_name=user_name,
+        user_name=resolved_user_name,
     )
 
     logger.info(
@@ -235,3 +241,29 @@ async def _update_progress_summary(scope: TenantScope, session: Session) -> None
             "progress": project.progress_summary,
         },
     )
+
+
+def _resolve_user_display_name(raw_name: str | None) -> str | None:
+    """Normaliza nome de exibição para uso no prompt.
+
+    Regras:
+    - Prioriza nome explícito quando enviado pelo endpoint (display name).
+    - Se vier e-mail, remove domínio e tenta humanizar o prefixo.
+    - Retorna None para entradas vazias.
+    """
+    if not raw_name:
+        return None
+
+    candidate = raw_name.strip()
+    if not candidate:
+        return None
+
+    if "@" in candidate:
+        candidate = candidate.split("@", 1)[0]
+
+    candidate = candidate.replace(".", " ").replace("_", " ").replace("-", " ")
+    normalized = " ".join(part for part in candidate.split() if part).strip()
+    if not normalized:
+        return None
+
+    return normalized.title()

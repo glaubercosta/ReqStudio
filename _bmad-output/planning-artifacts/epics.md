@@ -706,6 +706,43 @@ So that cada story seja encerrada com prova objetiva e sem presunção de execu�
 **And** nenhum fechamento de story ocorre sem evidência anexada na conversa e no arquivo da story
 **And** template/checklist de PR/review atualizado para refletir o novo DoD
 
+### Story 6.0c: Hardening de UX do Chat e Confiabilidade de Sessão
+
+As a Ana,
+I want que o chat tenha fluxo contínuo e que minha sessão seja estável durante uso normal,
+So that eu consiga conduzir a elicitação sem fricção operacional e sem perda de contexto.
+
+**Acceptance Criteria:**
+
+**Given** SessionPage ativa com mensagens da IA em streaming
+**When** novas mensagens chegam
+**Then** a rolagem acompanha automaticamente a resposta até o final do streaming, sem exigir interação manual na barra lateral
+**And** mensagens longas do usuário não sobrepõem os blocos da IA (layout resiliente com quebra/limite de altura)
+**And** botão de upload permanece habilitado quando `projectId` existe e o estado de loading não está ativo
+**And** upload via ChatInput executa o fluxo completo (`pick -> upload -> status inline -> contexto disponível`) sem ficar inativo sem motivo
+**And** sessão não expira abruptamente em uso contínuo de curta duração (3-4 min) sem feedback ao usuário
+**And** em caso de expiração real, UX mostra mensagem guiada e ação de recuperação (relogin/retomar), sem saída brusca
+**And** widget de custo/tokens exibe valor consistente e estável entre renders (normalização de arredondamento/precisão)
+**And** testes: regressão de autoscroll, layout de mensagem longa, upload ativo/inativo, fluxo de sessão expirada com recovery, consistência de formatação do custo
+
+### Story 6.0d: Fidelidade da Persona BMAD na Elicitação
+
+As a Ana,
+I want que o agente se comporte como um facilitador BMAD real desde o início da sessão,
+So that eu perceba uma entrevista profissional, com identidade clara e progresso perceptível.
+
+**Acceptance Criteria:**
+
+**Given** primeira mensagem da sessão
+**When** o agente inicia a conversa
+**Then** o agente se apresenta com nome e papel claramente
+**And** usa o nome de exibição do usuário (quando disponível) em vez do prefixo do e-mail
+**And** declara objetivo e estrutura da entrevista (fases e expectativa de encerramento)
+**And** mantém estilo 100% BMAD para elicitação inicial (perguntas direcionadas, progressão clara e sem massificar)
+**And** sinaliza evolução e proximidade de fechamento ao longo dos blocos da entrevista
+**And** painel de etapas/progresso fica visível também durante a tela de trabalho da sessão (não apenas no retorno ao projeto)
+**And** testes: prompt/seed com elementos obrigatórios de apresentação e identidade, cenários de UX cobrindo abertura da sessão e progressão
+
 ### Story 6.1: Modelo de Artefato com JSON Canônico e Versionamento
 
 As a desenvolvedor,

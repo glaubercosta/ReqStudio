@@ -9,7 +9,7 @@ Testes unitários puros (sem DB).
 
 import pytest
 
-from app.modules.engine.elicitation import _compute_progress_summary
+from app.modules.engine.elicitation import _compute_progress_summary, _resolve_user_display_name
 
 
 # ── Testes de _compute_progress_summary ──────────────────────────────────────
@@ -116,3 +116,19 @@ async def test_update_progress_summary_calls_db():
     assert mock_project.progress_summary["context"] is True
     assert mock_project.progress_summary["stakeholders"] is True
     assert mock_project.progress_summary["goals"] is False
+
+
+def test_resolve_user_display_name_prefere_nome_limpo():
+    """Quando nome de exibição vier preenchido, deve ser usado sem ruído."""
+    assert _resolve_user_display_name("  maria clara  ") == "Maria Clara"
+
+
+def test_resolve_user_display_name_humaniza_prefixo_email():
+    """Fallback de e-mail deve humanizar prefixo e remover domínio."""
+    assert _resolve_user_display_name("joao.silva@empresa.com") == "Joao Silva"
+
+
+def test_resolve_user_display_name_retorna_none_para_vazio():
+    """Entrada vazia não deve injetar nome inválido no prompt."""
+    assert _resolve_user_display_name(None) is None
+    assert _resolve_user_display_name("   ") is None
