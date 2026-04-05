@@ -63,7 +63,7 @@ async def route_get_artifact(
 @router.get("/{artifact_id}/render", response_model=ApiResponse[ArtifactRenderResponse])
 async def route_render_artifact(
     artifact_id: str,
-    view: str = "business",
+    view: str = Query("business", pattern="^(business|technical)$"),
     scope: TenantScope = Depends(get_tenant_scope)
 ) -> ApiResponse:
     """Renderiza o artefato em Markdown (visão 'business' ou 'technical')."""
@@ -84,7 +84,7 @@ async def route_get_artifact_coverage(
 @router.get("/{artifact_id}/export")
 async def route_export_artifact(
     artifact_id: str,
-    format: str = Query("markdown", regex="^(markdown|json)$"),
+    format: str = Query("markdown", pattern="^(markdown|json)$"),
     view: str = "business",
     scope: TenantScope = Depends(get_tenant_scope)
 ) -> Response:

@@ -101,5 +101,16 @@ async def test_render_low_coverage_warning(client: AsyncClient, tenant_a_token):
     res = await client.get(f"/api/v1/artifacts/{artifact_id}/render", headers=_auth(tenant_a_token))
     md = res.json()["data"]["markdown"]
     
-    assert "⚠️ **Conteúdo Pendente**" in md
+    assert "⚠️ Pendente de aprofundamento" in md
     assert "[!WARNING]" in md
+
+
+@pytest.mark.asyncio
+async def test_render_rejects_invalid_view(client: AsyncClient, tenant_a_token):
+    artifact_id = await _create_base_artifact(client, tenant_a_token)
+
+    res = await client.get(
+        f"/api/v1/artifacts/{artifact_id}/render?view=invalid",
+        headers=_auth(tenant_a_token),
+    )
+    assert res.status_code == 422

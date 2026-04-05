@@ -16,7 +16,7 @@ def render_section_to_markdown(section: ArtifactSection, view: str) -> str:
     # Badge de cobertura baixa
     status_badge = ""
     if section.coverage < 0.3:
-        status_badge = " > [!WARNING]\n> ⚠️ **Conteúdo Pendente**: Esta seção ainda não foi explorada suficientemente.\n\n"
+        status_badge = " > [!WARNING]\n> ⚠️ Pendente de aprofundamento\n\n"
 
     # Na visão técnica, podemos adicionar metadados extras ou formatação Gherkin
     if view == "technical":
