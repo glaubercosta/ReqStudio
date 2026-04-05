@@ -30,7 +30,7 @@ async def create_artifact(scope: TenantScope, data: ArtifactCreate) -> Artifact:
     if not project:
         raise not_found_error("projeto")
         
-    initial_state = {"sections": [], "metadata": {}, "total_coverage": 0.0}
+    initial_state = {"sections": [], "metadata": {"total_coverage": 0.0}}
     artifact = Artifact(
         project_id=data.project_id,
         session_id=data.session_id,
@@ -72,12 +72,12 @@ async def update_artifact(scope: TenantScope, artifact_id: str, data: ArtifactUp
     
     # Recalcular cobertura antes de salvar
     state = data.artifact_state
-    state.total_coverage = _calculate_total_coverage(state)
+    state.metadata.total_coverage = _calculate_total_coverage(state)
     
     # Atualizar objeto Artifact
     artifact.version += 1
     artifact.artifact_state = state.model_dump()
-    artifact.coverage_data = {"total": state.total_coverage} # Snapshot rápido para dashboard
+    artifact.coverage_data = {"total": state.metadata.total_coverage} # Snapshot rápido para dashboard
     
     if data.status:
         artifact.status = data.status
@@ -90,7 +90,8 @@ async def update_artifact(scope: TenantScope, artifact_id: str, data: ArtifactUp
         tenant_id=scope.tenant_id,
         version=artifact.version,
         state_snapshot=artifact.artifact_state,
-        change_reason=data.change_reason or f"Atualização versão {artifact.version}"
+        change_reason=data.change_reason or f"Atualização versão {artifact.version}",
+        changed_by=data.changed_by,
     )
     scope.db.add(version)
     
@@ -168,7 +169,7 @@ async def get_artifact_coverage(scope: TenantScope, artifact_id: str) -> dict:
     
     return {
         "artifact_id": artifact.id,
-        "total_coverage": state.total_coverage,
+        "total_coverage": state.metadata.total_coverage,
         "sections": [
             {"id": s.id, "title": s.title, "coverage": s.coverage} 
             for s in state.sections

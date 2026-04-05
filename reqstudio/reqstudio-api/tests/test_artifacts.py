@@ -66,10 +66,10 @@ async def test_update_artifact_creates_new_version(client: AsyncClient, tenant_a
             "sections": [
                 {"id": "sec-1", "title": "Introdução", "content": "Texto alpha", "coverage": 0.5, "sources": []}
             ],
-            "metadata": {},
-            "total_coverage": 0.1
+            "metadata": {"total_coverage": 0.1}
         },
-        "change_reason": "Adicionada introdução"
+        "change_reason": "Adicionada introdução",
+        "changed_by": "dev-user"
     }
     
     update_res = await client.post(
@@ -93,6 +93,7 @@ async def test_update_artifact_creates_new_version(client: AsyncClient, tenant_a
     assert versions[0]["version"] == 2
     assert versions[1]["version"] == 1
     assert versions[0]["change_reason"] == "Adicionada introdução"
+    assert versions[0]["changed_by"] == "dev-user"
 
 
 @pytest.mark.asyncio
@@ -116,7 +117,7 @@ async def test_artifact_tenant_isolation(client: AsyncClient, tenant_a_token, te
     # Tenant B tries to UPDATE Tenant A's artifact -> 404
     res_update = await client.post(
         f"/api/v1/artifacts/{artifact_a_id}/update",
-        json={"artifact_state": {"sections": [], "metadata": {}, "total_coverage": 0.0}},
+        json={"artifact_state": {"sections": [], "metadata": {"total_coverage": 0.0}}},
         headers=_auth(tenant_b_token)
     )
     assert res_update.status_code == 404

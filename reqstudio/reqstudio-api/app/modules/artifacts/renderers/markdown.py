@@ -39,7 +39,9 @@ def render_artifact_to_markdown(title: str, state: ArtifactState, view: str = "b
     # Cabeçalho Principal
     view_label = "Visão de Negócio" if view == "business" else "Especificação Técnica"
     lines.append(f"# {title}")
-    lines.append(f"> **Status**: {view_label} | **Cobertura Global**: {state.total_coverage*100:.0f}%")
+    lines.append(
+        f"> **Status**: {view_label} | **Cobertura Global**: {state.metadata.total_coverage*100:.0f}%"
+    )
     lines.append("\n---\n")
 
     if not state.sections:

@@ -45,8 +45,7 @@ async def test_automatic_coverage_calculation(client: AsyncClient, tenant_a_toke
             {"id": "sec-1", "title": "S1", "content": "c1", "coverage": 0.5, "sources": []},
             {"id": "sec-2", "title": "S2", "content": "c2", "coverage": 1.0, "sources": []}
         ],
-        "metadata": {},
-        "total_coverage": 0.0 # Will be overwritten by backend
+        "metadata": {"total_coverage": 0.0} # Will be overwritten by backend
     }
     
     update_res = await client.post(
@@ -58,7 +57,7 @@ async def test_automatic_coverage_calculation(client: AsyncClient, tenant_a_toke
     data = update_res.json()["data"]
     
     # Average: (0.5 + 1.0) / 2 = 0.75
-    assert data["artifact_state"]["total_coverage"] == 0.75
+    assert data["artifact_state"]["metadata"]["total_coverage"] == 0.75
 
 
 @pytest.mark.asyncio
@@ -72,8 +71,7 @@ async def test_get_coverage_endpoint(client: AsyncClient, tenant_a_token):
             {"id": "s2", "title": "T2", "content": "...", "coverage": 0.4, "sources": []},
             {"id": "s3", "title": "T3", "content": "...", "coverage": 0.6, "sources": []}
         ],
-        "metadata": {},
-        "total_coverage": 0.0
+        "metadata": {"total_coverage": 0.0}
     }
     await client.post(f"/api/v1/artifacts/{artifact_id}/update", json={"artifact_state": state}, headers=_auth(tenant_a_token))
     
