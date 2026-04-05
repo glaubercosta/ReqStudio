@@ -1,6 +1,6 @@
 # Story 6.1: Modelo de Artefato com JSON Canônico e Versionamento
 
-Status: review
+Status: done
 
 ## Story
 
@@ -122,6 +122,7 @@ gpt-5 (Codex)
 - Dependência `python-magic-bin` instalada com sucesso no ambiente local do usuário.
 - Execução de regressão dos testes de artifacts concluída com sucesso (`12 passed`) após fix de carregamento do `pytest-asyncio`.
 - Handoff BMAD para `review` concluído com evidências anexadas (testes e alterações por AC).
+- Review BMAD concluído com decisão `approve` e story encerrada em `done`.
 - [ ] Waiting for Manual Execution: `cd reqstudio/reqstudio-api && $env:DEBUG='false'; pytest tests/test_artifacts.py tests/test_artifacts_render.py tests/test_artifacts_coverage.py tests/test_artifacts_export.py -q`
 - [ ] Waiting for Manual Execution: `cd reqstudio/reqstudio-api && $env:DEBUG='false'; $env:PYTEST_DISABLE_PLUGIN_AUTOLOAD='1'; pytest -p pytest_asyncio tests/test_artifacts.py tests/test_artifacts_render.py tests/test_artifacts_coverage.py tests/test_artifacts_export.py -q`
 - [ ] Waiting for Manual Execution: `cd C:\Users\Glauber\codes\ReqStudio\reqstudio\reqstudio-api; python -m pip install asyncpg`
@@ -151,3 +152,24 @@ gpt-5 (Codex)
 - 2026-04-05: Story criada e marcada como `ready-for-dev` para iniciar implementação do Epic 6.1.
 - 2026-04-05: Implementação iniciada; ajustes de schema/serviço/testes aplicados. Validação bloqueada no ambiente local por `asyncpg` ausente.
 - 2026-04-05: Story movida para `review` após validação da suíte de artifacts e registro de evidências no Dev Agent Record.
+- 2026-04-05: Review BMAD executado com `approve`; story movida de `review` para `done`.
+
+## Review Agent Record
+
+### Review Date
+
+2026-04-05
+
+### Decision
+
+approve (sem bloqueios)
+
+### Findings
+
+- Low: `reqstudio/reqstudio-api/app/modules/artifacts/router.py:87` usa `regex` (deprecado) em `Query`; recomendação de trocar para `pattern`.
+- Low: `reqstudio/reqstudio-api/app/modules/artifacts/schemas.py` não expõe `tenant_id` em `ArtifactResponse`; confirmar se é intencional para alinhar integralmente com AC1.
+
+### Residual Risks / Test Gaps
+
+- Export/render sem cobertura de variações de `view` e falhas de autorização multi-tenant (401/404).
+- Versionamento sem cenário explícito de múltiplas atualizações consecutivas com fallback de `change_reason`/`changed_by`.

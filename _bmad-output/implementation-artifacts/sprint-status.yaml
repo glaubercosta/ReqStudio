@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-03-29T18:47:00-03:00
-last_updated: 2026-04-05T11:45:08-03:00
+last_updated: 2026-04-05T13:07:46-03:00
 project: ReqStudio
 project_key: NOKEY
 tracking_system: file-system
@@ -120,7 +120,7 @@ development_status:
   6-0b-dod-checklist-evidencias-terminal-handoff: done
   6-0c-hardening-ux-chat-confiabilidade-sessao: done
   6-0d-fidelidade-persona-bmad-elicitacao: done
-  6-1-modelo-artefato-json-canonico-versionamento: review
+  6-1-modelo-artefato-json-canonico-versionamento: done
   6-2-renderizacao-dual-visao-negocio-tecnica: backlog
   6-3-cobertura-por-secao-artefato: backlog
   6-4-exportacao-artefatos-markdown-json: backlog
