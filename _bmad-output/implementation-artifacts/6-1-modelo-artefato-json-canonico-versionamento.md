@@ -1,6 +1,6 @@
 # Story 6.1: Modelo de Artefato com JSON Canônico e Versionamento
 
-Status: in-progress
+Status: review
 
 ## Story
 
@@ -121,7 +121,7 @@ gpt-5 (Codex)
 - Dependência `asyncpg` instalada com sucesso no ambiente local do usuário.
 - Dependência `python-magic-bin` instalada com sucesso no ambiente local do usuário.
 - Execução de regressão dos testes de artifacts concluída com sucesso (`12 passed`) após fix de carregamento do `pytest-asyncio`.
-- Story mantida em `in-progress` por rito BMAD até handoff formal para `review` com evidências anexadas.
+- Handoff BMAD para `review` concluído com evidências anexadas (testes e alterações por AC).
 - [ ] Waiting for Manual Execution: `cd reqstudio/reqstudio-api && $env:DEBUG='false'; pytest tests/test_artifacts.py tests/test_artifacts_render.py tests/test_artifacts_coverage.py tests/test_artifacts_export.py -q`
 - [ ] Waiting for Manual Execution: `cd reqstudio/reqstudio-api && $env:DEBUG='false'; $env:PYTEST_DISABLE_PLUGIN_AUTOLOAD='1'; pytest -p pytest_asyncio tests/test_artifacts.py tests/test_artifacts_render.py tests/test_artifacts_coverage.py tests/test_artifacts_export.py -q`
 - [ ] Waiting for Manual Execution: `cd C:\Users\Glauber\codes\ReqStudio\reqstudio\reqstudio-api; python -m pip install asyncpg`
@@ -150,3 +150,4 @@ gpt-5 (Codex)
 
 - 2026-04-05: Story criada e marcada como `ready-for-dev` para iniciar implementação do Epic 6.1.
 - 2026-04-05: Implementação iniciada; ajustes de schema/serviço/testes aplicados. Validação bloqueada no ambiente local por `asyncpg` ausente.
+- 2026-04-05: Story movida para `review` após validação da suíte de artifacts e registro de evidências no Dev Agent Record.
