@@ -4,6 +4,7 @@ Endpoints for CRUD, Versioning, Rendering, Coverage and Export.
 """
 
 from typing import List
+from time import perf_counter
 from fastapi import APIRouter, Depends, Query, Response
 
 from app.db.tenant import get_tenant_scope, TenantScope
@@ -64,10 +65,16 @@ async def route_get_artifact(
 async def route_render_artifact(
     artifact_id: str,
     view: str = Query("business", pattern="^(business|technical)$"),
+    show_ids: bool = Query(False),
     scope: TenantScope = Depends(get_tenant_scope)
 ) -> ApiResponse:
     """Renderiza o artefato em Markdown (visão 'business' ou 'technical')."""
-    md = await get_artifact_markdown(scope, artifact_id, view=view)
+    md = await get_artifact_markdown(
+        scope,
+        artifact_id,
+        view=view,
+        show_business_ids=show_ids,
+    )
     return ApiResponse(data={"markdown": md})
 
 
@@ -85,11 +92,20 @@ async def route_get_artifact_coverage(
 async def route_export_artifact(
     artifact_id: str,
     format: str = Query("markdown", pattern="^(markdown|json)$"),
-    view: str = "business",
+    view: str = Query("business", pattern="^(business|technical)$"),
+    show_ids: bool = Query(False),
     scope: TenantScope = Depends(get_tenant_scope)
 ) -> Response:
     """Exporta o artefato para download (Markdown ou JSON)."""
-    content, filename = await get_artifact_export(scope, artifact_id, format=format, view=view)
+    start = perf_counter()
+    content, filename = await get_artifact_export(
+        scope,
+        artifact_id,
+        format=format,
+        view=view,
+        show_business_ids=show_ids,
+    )
+    duration_ms = (perf_counter() - start) * 1000
     
     media_type = "text/markdown" if format == "markdown" else "application/json"
     
@@ -97,7 +113,8 @@ async def route_export_artifact(
         content=content,
         media_type=media_type,
         headers={
-            "Content-Disposition": f'attachment; filename="{filename}"'
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            "X-Export-Duration-Ms": f"{duration_ms:.2f}",
         }
     )
 

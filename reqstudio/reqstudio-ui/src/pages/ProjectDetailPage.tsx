@@ -9,7 +9,7 @@
 
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { ProjectModal } from '@/components/ProjectModal'
@@ -20,6 +20,7 @@ import { DocumentUpload } from '@/components/DocumentUpload'
 import { DocumentList } from '@/components/DocumentList'
 import { sessionsApi } from '@/services/sessionsApi'
 import { useProjectSessions } from '@/hooks/useProjectSessions'
+import { artifactsApi } from '@/services/artifactsApi'
 import type { Session } from '@/services/sessionsApi'
 
 import { projectsQueryKey } from '@/hooks/useProjects'
@@ -263,6 +264,12 @@ export default function ProjectDetailPage() {
   const { data: resumableSessions } = useProjectSessions(id ?? '')
   const activeSession: Session | null = resumableSessions?.[0] ?? null
   const hasSessions = !!activeSession
+  const { data: projectArtifacts = [] } = useQuery({
+    queryKey: ['project-artifacts', id],
+    queryFn: () => artifactsApi.listByProject(id ?? '').then(r => r.data),
+    enabled: !!id,
+    staleTime: 20_000,
+  })
 
   const handleStartSession = async () => {
     if (!id) return
@@ -415,6 +422,38 @@ export default function ProjectDetailPage() {
               activeSession={activeSession}
               onStart={handleStartSession}
             />
+
+            {projectArtifacts.length > 0 && (
+              <section className="mt-[var(--space-8)] border-t border-border pt-[var(--space-6)]">
+                <div className="mb-4">
+                  <h2 className="text-h2 font-semibold text-foreground">Artefatos</h2>
+                  <p className="text-body-sm text-muted-foreground mt-1">
+                    Revise o documento final e exporte em Markdown ou JSON.
+                  </p>
+                </div>
+                <div className="space-y-3">
+                  {projectArtifacts.map(artifact => (
+                    <article key={artifact.id} className="rounded-[var(--radius-lg)] border border-border p-4 bg-card">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="text-body font-semibold truncate">{artifact.title}</p>
+                          <p className="text-caption text-muted-foreground">
+                            v{artifact.version} · {artifact.status}
+                          </p>
+                        </div>
+                        <Button
+                          size="sm"
+                          onClick={() => navigate(`/artifacts/${artifact.id}`)}
+                          id={`btn-open-artifact-${artifact.id}`}
+                        >
+                          Abrir
+                        </Button>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              </section>
+            )}
 
             {/* Document Management Section (Story 4.3) - Only show when elicitation has begun */}
             {hasSessions && (

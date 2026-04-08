@@ -11,6 +11,7 @@ import type { UIEvent } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useSession } from '@/hooks/useSession'
 import { useProject } from '@/hooks/useProject'
+import { artifactsApi, type Artifact } from '@/services/artifactsApi'
 import { ChatMessage } from '@/components/chat/ChatMessage'
 import { ChatInput } from '@/components/chat/ChatInput'
 import { TypingIndicator } from '@/components/chat/TypingIndicator'
@@ -314,25 +315,50 @@ function SessionChatPanel({
 }
 
 interface SessionArtifactPanelProps {
-  artifactState: unknown
+  previewMarkdown: string
+  isLoadingPreview: boolean
+  artifactId: string | null
+  onOpenArtifact: (artifactId: string) => void
 }
 
-function SessionArtifactPanel({ artifactState }: SessionArtifactPanelProps) {
+function SessionArtifactPanel({
+  previewMarkdown,
+  isLoadingPreview,
+  artifactId,
+  onOpenArtifact,
+}: SessionArtifactPanelProps) {
   return (
     <div className="flex flex-col h-full">
       <div
-        className="shrink-0 flex items-center px-4 py-3"
+        className="shrink-0 flex items-center justify-between gap-3 px-4 py-3"
         style={{ borderBottom: '1px solid var(--border)', background: 'var(--rs-surface)' }}
       >
         <h2 className="text-h3 font-semibold" style={{ color: 'var(--rs-text-primary)' }}>
           Artefato
         </h2>
+        {artifactId ? (
+          <button
+            type="button"
+            id="btn-open-artifact-from-session"
+            className="text-caption px-2 py-1 rounded-md border border-border hover:bg-muted transition-colors"
+            onClick={() => onOpenArtifact(artifactId)}
+          >
+            Abrir artefato
+          </button>
+        ) : null}
       </div>
       <div
         className="flex-1 overflow-y-auto px-4 py-4"
         style={{ background: 'var(--background)' }}
       >
-        {artifactState ? (
+        {isLoadingPreview ? (
+          <div className="flex justify-center py-8">
+            <div
+              className="w-6 h-6 rounded-full border-2 animate-spin"
+              style={{ borderColor: 'var(--rs-primary)', borderTopColor: 'transparent' }}
+            />
+          </div>
+        ) : previewMarkdown ? (
           <pre
             className="text-mono whitespace-pre-wrap"
             style={{
@@ -341,16 +367,16 @@ function SessionArtifactPanel({ artifactState }: SessionArtifactPanelProps) {
               lineHeight: 'var(--leading-mono)',
             }}
           >
-            {JSON.stringify(artifactState, null, 2)}
+            {previewMarkdown}
           </pre>
         ) : (
           <div className="flex flex-col items-center justify-center py-16 text-center" style={{ color: 'var(--rs-text-muted)' }}>
             <div className="text-4xl mb-4">📋</div>
             <p className="text-body" style={{ fontWeight: 'var(--font-weight-medium)' }}>
-              Artefato em construção
+              Artefato ainda nao disponivel
             </p>
             <p className="text-body-sm mt-1">
-              O artefato aparecerá aqui conforme a IA o constrói com você.
+              Continue a elicitação no chat para gerar o documento de negocio.
             </p>
           </div>
         )}
@@ -364,6 +390,9 @@ export default function SessionPage() {
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState<Tab>('chat')
   const [artifactUpdated, setArtifactUpdated] = useState(false)
+  const [linkedArtifactId, setLinkedArtifactId] = useState<string | null>(null)
+  const [businessPreview, setBusinessPreview] = useState('')
+  const [isLoadingBusinessPreview, setIsLoadingBusinessPreview] = useState(false)
 
   const {
     session,
@@ -402,6 +431,63 @@ export default function SessionPage() {
     },
     [sendMessage],
   )
+
+  const handleOpenArtifact = useCallback((artifactId: string) => {
+    navigate(`/artifacts/${artifactId}`)
+  }, [navigate])
+
+  useEffect(() => {
+    const projectId = session?.project_id
+    if (!projectId) {
+      setLinkedArtifactId(null)
+      return
+    }
+
+    let active = true
+    artifactsApi.listByProject(projectId)
+      .then((res) => {
+        if (!active) return
+        const artifacts = res.data ?? []
+        const fromSession = artifacts.find((a: Artifact) => a.session_id === sessionId)
+        const fallback = artifacts[0] ?? null
+        setLinkedArtifactId((fromSession ?? fallback)?.id ?? null)
+      })
+      .catch(() => {
+        if (!active) return
+        setLinkedArtifactId(null)
+      })
+
+    return () => {
+      active = false
+    }
+  }, [session?.project_id, sessionId])
+
+  useEffect(() => {
+    if (!linkedArtifactId) {
+      setBusinessPreview('')
+      return
+    }
+
+    let active = true
+    setIsLoadingBusinessPreview(true)
+    artifactsApi.render(linkedArtifactId, 'business')
+      .then((res) => {
+        if (!active) return
+        setBusinessPreview(res.data.markdown ?? '')
+      })
+      .catch(() => {
+        if (!active) return
+        setBusinessPreview('')
+      })
+      .finally(() => {
+        if (!active) return
+        setIsLoadingBusinessPreview(false)
+      })
+
+    return () => {
+      active = false
+    }
+  }, [linkedArtifactId])
 
   if (!sessionId) {
     navigate('/projects')
@@ -480,7 +566,12 @@ export default function SessionPage() {
             />
           </div>
           <div className="flex flex-col" style={{ width: '60%' }}>
-            <SessionArtifactPanel artifactState={session?.artifact_state ?? null} />
+            <SessionArtifactPanel
+              previewMarkdown={businessPreview}
+              isLoadingPreview={isLoadingBusinessPreview}
+              artifactId={linkedArtifactId}
+              onOpenArtifact={handleOpenArtifact}
+            />
           </div>
         </div>
 
@@ -505,7 +596,12 @@ export default function SessionPage() {
               workflowPosition={session?.workflow_position ?? null}
             />
           ) : (
-            <SessionArtifactPanel artifactState={session?.artifact_state ?? null} />
+            <SessionArtifactPanel
+              previewMarkdown={businessPreview}
+              isLoadingPreview={isLoadingBusinessPreview}
+              artifactId={linkedArtifactId}
+              onOpenArtifact={handleOpenArtifact}
+            />
           )}
         </div>
       </div>

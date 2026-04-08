@@ -1,6 +1,6 @@
 # Story 6.2: Renderização Dual — Visão de Negócio e Técnica
 
-Status: review
+Status: done
 
 ## Story
 
@@ -73,3 +73,4 @@ gpt-5 (Codex)
 - 2026-04-05: Story criada em implementation artifacts e iniciada (`in-progress`).
 - 2026-04-05: Implementação incremental aplicada no endpoint e renderer com cobertura de testes ampliada.
 - 2026-04-05: Story movida para `review` após validação da suíte de artifacts.
+- 2026-04-07: Story movida para `done` após code review e saneamento no hardening 6.2x.

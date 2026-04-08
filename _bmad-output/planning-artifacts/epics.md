@@ -775,6 +775,24 @@ So that eu e o time técnico tenhamos acesso adequado (FR20).
 **And** ambas visões do mesmo artifact_state JSONB (source of truth)
 **And** seções cobertura baixa → "⚠️ Pendente de aprofundamento"
 
+### Story 6.2x: Hardening da Renderização Dual — Consistência e Robustez
+
+As a Ana e time técnico,
+I want que as visões de negócio e técnica sejam estruturalmente consistentes e resilientes,
+So that revisão, exportação e colaboração ocorram sem ambiguidade e sem quebra de formatação.
+
+**Acceptance Criteria:**
+
+**Given** o mesmo `artifact_state`
+**When** renderizar `business` e `technical`
+**Then** ambas visões preservam a mesma ordem e quantidade de seções (`section.id`) em paridade estrutural
+**And** visão técnica mantém ID no heading; visão de negócio oculta ID por padrão e oferece toggle opcional para exibição
+**And** detecção de cenários para bloco Gherkin cobre `Given/When/Then` e `Dado/Quando/Então`, com case-insensitive
+**And** conteúdo já encapsulado em bloco de código não deve receber dupla marcação
+**And** seção com conteúdo vazio/whitespace renderiza placeholder canônico `_Sem conteúdo detalhado._`
+**And** limiar de cobertura baixa permanece fixo no MVP em `< 0.3`
+**And** testes de regressão validam: paridade entre visões, toggle opcional, Gherkin PT/EN, ausência de dupla marcação e placeholder canônico
+
 ### Story 6.3: Cobertura por Seção do Artefato
 
 As a Ana,

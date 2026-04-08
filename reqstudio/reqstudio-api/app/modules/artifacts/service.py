@@ -3,7 +3,9 @@
 Handles CRUD for Artifacts, automatic snapshotting and coverage calculation.
 """
 
-from typing import Sequence
+import json
+import re
+from typing import Any, Sequence
 
 from sqlalchemy import select, desc
 
@@ -15,13 +17,66 @@ from app.modules.artifacts.renderers.markdown import render_artifact_to_markdown
 from app.modules.projects.models import Project
 
 
-def _calculate_total_coverage(state: ArtifactState) -> float:
-    """Calcula a média de cobertura das seções do artefato."""
-    if not state.sections:
-        return 0.0
-    
-    total = sum(section.coverage for section in state.sections)
-    return round(total / len(state.sections), 2)
+LOW_COVERAGE_THRESHOLD = 0.3
+HIGH_COVERAGE_THRESHOLD = 0.7
+
+
+def _slugify_filename_part(value: str) -> str:
+    """Normaliza fragmentos de filename para download cross-browser."""
+    slug = value.strip().lower().replace(" ", "_")
+    slug = re.sub(r"[^a-z0-9_-]", "", slug)
+    slug = re.sub(r"_+", "_", slug)
+    return slug or "artifact"
+
+
+def _clamp_coverage(value: float) -> float:
+    """Normaliza cobertura para faixa [0.0, 1.0] com 2 casas."""
+    return round(min(max(value, 0.0), 1.0), 2)
+
+
+def _coverage_band(coverage: float) -> str:
+    """Faixa de cobertura para mapeamento visual (UX-DR4)."""
+    if coverage < LOW_COVERAGE_THRESHOLD:
+        return "low"
+    if coverage <= HIGH_COVERAGE_THRESHOLD:
+        return "medium"
+    return "high"
+
+
+def _card_state(coverage: float) -> str:
+    """Estado por seção/card para consumo em UI."""
+    if coverage < LOW_COVERAGE_THRESHOLD:
+        return "pending"
+    if coverage <= HIGH_COVERAGE_THRESHOLD:
+        return "active"
+    return "complete"
+
+
+def _calculate_coverage_snapshot(state: ArtifactState) -> dict[str, Any]:
+    """Calcula cobertura total e por seção de forma determinística."""
+    sections_snapshot: list[dict[str, Any]] = []
+    for section in state.sections:
+        normalized_coverage = _clamp_coverage(section.coverage)
+        sections_snapshot.append({
+            "id": section.id,
+            "title": section.title,
+            "coverage": normalized_coverage,
+            "coverage_band": _coverage_band(normalized_coverage),
+            "card_state": _card_state(normalized_coverage),
+        })
+
+    if not sections_snapshot:
+        total_coverage = 0.0
+    else:
+        total_coverage = round(
+            sum(s["coverage"] for s in sections_snapshot) / len(sections_snapshot),
+            2,
+        )
+
+    return {
+        "total_coverage": total_coverage,
+        "sections": sections_snapshot,
+    }
 
 
 async def create_artifact(scope: TenantScope, data: ArtifactCreate) -> Artifact:
@@ -72,12 +127,16 @@ async def update_artifact(scope: TenantScope, artifact_id: str, data: ArtifactUp
     
     # Recalcular cobertura antes de salvar
     state = data.artifact_state
-    state.metadata.total_coverage = _calculate_total_coverage(state)
+    coverage_snapshot = _calculate_coverage_snapshot(state)
+    state.metadata.total_coverage = coverage_snapshot["total_coverage"]
     
     # Atualizar objeto Artifact
     artifact.version += 1
     artifact.artifact_state = state.model_dump()
-    artifact.coverage_data = {"total": state.metadata.total_coverage} # Snapshot rápido para dashboard
+    artifact.coverage_data = {
+        "total": state.metadata.total_coverage,
+        "band": _coverage_band(state.metadata.total_coverage),
+    }  # Snapshot rápido para dashboard
     
     if data.status:
         artifact.status = data.status
@@ -125,34 +184,58 @@ async def get_project_artifacts(scope: TenantScope, project_id: str) -> Sequence
     return result.all()
 
 
-async def get_artifact_markdown(scope: TenantScope, artifact_id: str, view: str = "business") -> str:
+async def get_artifact_markdown(
+    scope: TenantScope,
+    artifact_id: str,
+    view: str = "business",
+    show_business_ids: bool = False,
+) -> str:
     """Recupera o artefato e renderiza como Markdown."""
     artifact = await get_artifact(scope, artifact_id)
     state = ArtifactState.model_validate(artifact.artifact_state)
-    return render_artifact_to_markdown(artifact.title, state, view=view)
+    return render_artifact_to_markdown(
+        artifact.title,
+        state,
+        view=view,
+        show_business_ids=show_business_ids,
+    )
 
 
-async def get_artifact_export(scope: TenantScope, artifact_id: str, format: str = "markdown", view: str = "business") -> tuple[str, str]:
+async def get_artifact_export(
+    scope: TenantScope,
+    artifact_id: str,
+    format: str = "markdown",
+    view: str = "business",
+    show_business_ids: bool = False,
+) -> tuple[str, str]:
     """Prepara o conteúdo e o nome do arquivo para exportação."""
     artifact = await get_artifact(scope, artifact_id)
-    
-    clean_title = artifact.title.replace(" ", "_").lower()
+    project = await scope.db.scalar(scope.where_id(Project, artifact.project_id))
+
+    clean_title = _slugify_filename_part(artifact.title)
     timestamp = artifact.updated_at.strftime("%Y%m%d")
+    total_coverage = float(artifact.artifact_state.get("metadata", {}).get("total_coverage", 0.0))
     
     if format == "json":
-        import json
         content = json.dumps(artifact.artifact_state, indent=2, ensure_ascii=False)
         filename = f"reqstudio_{clean_title}_{timestamp}_v{artifact.version}.json"
         return content, filename
         
     # Default: Markdown
-    md_content = await get_artifact_markdown(scope, artifact_id, view=view)
+    md_content = await get_artifact_markdown(
+        scope,
+        artifact_id,
+        view=view,
+        show_business_ids=show_business_ids,
+    )
     
     # Adicionar Header de Exportação
     header = (
         f"---\n"
+        f"Project: {project.name if project else artifact.project_id}\n"
         f"Artifact: {artifact.title}\n"
         f"Version: {artifact.version}\n"
+        f"Coverage: {total_coverage * 100:.0f}%\n"
         f"View: {view.capitalize()}\n"
         f"Export Date: {timestamp}\n"
         f"---\n\n"
@@ -166,12 +249,10 @@ async def get_artifact_coverage(scope: TenantScope, artifact_id: str) -> dict:
     """Retorna dados resumidos de cobertura para widgets e indicadores."""
     artifact = await get_artifact(scope, artifact_id)
     state = ArtifactState.model_validate(artifact.artifact_state)
+    snapshot = _calculate_coverage_snapshot(state)
     
     return {
         "artifact_id": artifact.id,
-        "total_coverage": state.metadata.total_coverage,
-        "sections": [
-            {"id": s.id, "title": s.title, "coverage": s.coverage} 
-            for s in state.sections
-        ]
+        "total_coverage": snapshot["total_coverage"],
+        "sections": snapshot["sections"],
     }

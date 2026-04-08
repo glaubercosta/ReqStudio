@@ -122,6 +122,8 @@ class ArtifactSectionCoverage(BaseModel):
     id: str
     title: str
     coverage: float
+    coverage_band: Literal["low", "medium", "high"]
+    card_state: Literal["pending", "active", "complete"]
 
 
 class ArtifactCoverageResponse(BaseModel):

@@ -3,6 +3,8 @@
 Verifies:
 - Automatic recalculation of total_coverage during update.
 - Coverage endpoint data integrity.
+- Coverage bands/states for UI mapping.
+- Cross-tenant access isolation.
 """
 
 import pytest
@@ -85,3 +87,64 @@ async def test_get_coverage_endpoint(client: AsyncClient, tenant_a_token):
     assert len(data["sections"]) == 3
     assert data["sections"][0]["title"] == "T1"
     assert data["sections"][1]["coverage"] == 0.4
+    assert data["sections"][0]["coverage_band"] == "low"
+    assert data["sections"][0]["card_state"] == "pending"
+    assert data["sections"][1]["coverage_band"] == "medium"
+    assert data["sections"][1]["card_state"] == "active"
+
+
+@pytest.mark.asyncio
+async def test_get_coverage_empty_sections(client: AsyncClient, tenant_a_token):
+    artifact_id = await _create_base_artifact(client, tenant_a_token)
+
+    res = await client.get(f"/api/v1/artifacts/{artifact_id}/coverage", headers=_auth(tenant_a_token))
+    assert res.status_code == 200
+    data = res.json()["data"]
+    assert data["total_coverage"] == 0.0
+    assert data["sections"] == []
+
+
+@pytest.mark.asyncio
+async def test_get_coverage_bands_thresholds(client: AsyncClient, tenant_a_token):
+    artifact_id = await _create_base_artifact(client, tenant_a_token)
+
+    state = {
+        "sections": [
+            {"id": "s-low", "title": "Low", "content": "...", "coverage": 0.29, "sources": []},
+            {"id": "s-mid-a", "title": "MidA", "content": "...", "coverage": 0.30, "sources": []},
+            {"id": "s-mid-b", "title": "MidB", "content": "...", "coverage": 0.70, "sources": []},
+            {"id": "s-high", "title": "High", "content": "...", "coverage": 0.71, "sources": []},
+        ],
+        "metadata": {"total_coverage": 1.0},  # intentionally wrong to validate backend recalculation
+    }
+    await client.post(
+        f"/api/v1/artifacts/{artifact_id}/update",
+        json={"artifact_state": state},
+        headers=_auth(tenant_a_token),
+    )
+
+    res = await client.get(f"/api/v1/artifacts/{artifact_id}/coverage", headers=_auth(tenant_a_token))
+    assert res.status_code == 200
+    data = res.json()["data"]
+    by_id = {s["id"]: s for s in data["sections"]}
+
+    assert by_id["s-low"]["coverage_band"] == "low"
+    assert by_id["s-low"]["card_state"] == "pending"
+    assert by_id["s-mid-a"]["coverage_band"] == "medium"
+    assert by_id["s-mid-a"]["card_state"] == "active"
+    assert by_id["s-mid-b"]["coverage_band"] == "medium"
+    assert by_id["s-mid-b"]["card_state"] == "active"
+    assert by_id["s-high"]["coverage_band"] == "high"
+    assert by_id["s-high"]["card_state"] == "complete"
+    assert data["total_coverage"] == 0.5  # (0.29 + 0.30 + 0.70 + 0.71)/4
+
+
+@pytest.mark.asyncio
+async def test_get_coverage_tenant_isolation(client: AsyncClient, tenant_a_token, tenant_b_token):
+    artifact_id = await _create_base_artifact(client, tenant_a_token)
+
+    res = await client.get(
+        f"/api/v1/artifacts/{artifact_id}/coverage",
+        headers=_auth(tenant_b_token),
+    )
+    assert res.status_code == 404
