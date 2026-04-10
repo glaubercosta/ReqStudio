@@ -1,17 +1,28 @@
 name: CD — Build e Push de Imagens Docker
 
 on:
+  workflow_dispatch:
   push:
     branches: [main]
     tags:
       - "v*.*.*"
+  workflow_run:
+    workflows: ["CI — Testes e Lint"]
+    types: [completed]
+    branches: [main]
+
+concurrency:
+  group: cd-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build-and-push:
     name: Build & Push Docker Images
     runs-on: ubuntu-latest
-    # Só executa se o CI passou
-    needs: []
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'push' ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
 
     permissions:
       contents: read
