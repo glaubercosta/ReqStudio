@@ -6,7 +6,7 @@ from typing import Any
 from pydantic import BaseModel, Field
 
 from app.modules.sessions.models import VALID_MESSAGE_ROLES, VALID_SESSION_STATUSES
-
+from app.schemas.response import PaginatedList
 
 # ── Session Schemas ───────────────────────────────────────────────────────────
 
@@ -39,12 +39,8 @@ class SessionResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
-class SessionListResponse(BaseModel):
-    items: list[SessionResponse]
-    total: int
-    page: int
-    size: int
-    pages: int
+# Backward-compatible alias — existing routers reference this name.
+SessionListResponse = PaginatedList[SessionResponse]
 
 
 # ── Message Schemas ───────────────────────────────────────────────────────────
@@ -77,9 +73,5 @@ class MessageResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
-class MessageListResponse(BaseModel):
-    items: list[MessageResponse]
-    total: int
-    page: int
-    size: int
-    pages: int
+# Backward-compatible alias — existing routers reference this name.
+MessageListResponse = PaginatedList[MessageResponse]

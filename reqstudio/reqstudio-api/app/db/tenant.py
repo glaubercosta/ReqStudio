@@ -88,6 +88,32 @@ class TenantScope:
         """
         return self.select(model).where(model.id == record_id)
 
+    async def get_or_404(self, model: Type[Any], record_id: str, label: str = "recurso") -> Any:
+        """Busca registro por ID no tenant ou levanta 404.
+
+        Encapsula o padrão repetido:
+            obj = await scope.db.scalar(scope.where_id(Model, id))
+            if not obj:
+                raise not_found_error("label")
+
+        Args:
+            model:     Classe SQLAlchemy com TenantMixin
+            record_id: UUID do registro
+            label:     Nome amigável para mensagem de erro (ex: "projeto", "sessão")
+
+        Returns:
+            A instância do modelo encontrada.
+
+        Raises:
+            GuidedRecoveryError: 404 se não encontrado ou pertence a outro tenant.
+        """
+        from app.core.exceptions import not_found_error
+
+        obj = await self.db.scalar(self.where_id(model, record_id))
+        if not obj:
+            raise not_found_error(label)
+        return obj
+
 
 async def get_tenant_scope(
     db: AsyncSession = Depends(get_db),
