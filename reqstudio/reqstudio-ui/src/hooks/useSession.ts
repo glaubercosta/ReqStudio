@@ -231,7 +231,9 @@ export function useSession({ sessionId }: UseSessionOptions) {
 
     return () => {
       if (session.status === 'active') {
-        sessionsApi.updateStatus(sessionId, 'paused').catch(() => {})
+        sessionsApi.updateStatus(sessionId, 'paused').catch((err) => {
+          console.warn('[useSession] Failed to pause session on unmount:', sessionId, err)
+        })
       }
     }
   }, [sessionId, session?.status, session, sessionTimedOut])
@@ -380,8 +382,16 @@ export function useSession({ sessionId }: UseSessionOptions) {
   // ── Pause (manual) ──
   const pause = useCallback(async () => {
     if (!sessionId || session?.status !== 'active') return
-    await sessionsApi.updateStatus(sessionId, 'paused')
-    queryClient.invalidateQueries({ queryKey: ['session', sessionId] })
+    try {
+      await sessionsApi.updateStatus(sessionId, 'paused')
+      queryClient.invalidateQueries({ queryKey: ['session', sessionId] })
+    } catch (err) {
+      console.error('[useSession] Failed to pause session:', sessionId, err)
+      setError({
+        code: 'PAUSE_ERROR',
+        message: 'Não foi possível pausar a sessão. Tente novamente.',
+      })
+    }
   }, [sessionId, session?.status, queryClient])
 
   return {
