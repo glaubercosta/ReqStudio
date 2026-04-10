@@ -3,26 +3,8 @@
  * Usa o mesmo fetch/interceptor de 401 do apiClient base.
  */
 
-import { API_BASE, getAccessToken, ReqStudioApiError } from './apiClient'
-
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    ...(init?.headers as Record<string, string> ?? {}),
-  }
-  const token = getAccessToken()
-  if (token) headers['Authorization'] = `Bearer ${token}`
-
-  const res = await fetch(`${API_BASE}${path}`, {
-    ...init,
-    credentials: 'include',
-    headers,
-  })
-
-  const body = await res.json()
-  if (!res.ok) throw new ReqStudioApiError(body.error, res.status)
-  return body
-}
+import { request } from './apiClient'
+import type { PaginatedList } from './types'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -38,13 +20,7 @@ export interface Project {
   updated_at: string
 }
 
-export interface ProjectListData {
-  items: Project[]
-  total: number
-  page: number
-  size: number
-  pages: number
-}
+export type ProjectListData = PaginatedList<Project>
 
 export interface CreateProjectPayload {
   name: string

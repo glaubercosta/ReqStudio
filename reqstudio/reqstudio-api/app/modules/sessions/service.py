@@ -5,12 +5,13 @@ project_id ownership is validated on session creation to prevent cross-tenant bi
 """
 
 import math
-from datetime import datetime
 
 from sqlalchemy import func, select
 
 from app.core.exceptions import not_found_error
+from app.db.pagination import paginate
 from app.db.tenant import TenantScope
+from app.db.utils import apply_partial_update
 from app.modules.projects.models import Project
 from app.modules.sessions.models import SESSION_STATUS_ACTIVE, Message, Session
 from app.modules.sessions.schemas import (
@@ -42,6 +43,24 @@ async def _resolve_workflow_id(scope: TenantScope, workflow_id: str | None) -> s
     return wf.id
 
 
+# ── Helpers ───────────────────────────────────────────────────────────────────
+
+
+async def _message_count(scope: TenantScope, session_id: str) -> int:
+    """Return the message count for a session."""
+    return await scope.db.scalar(
+        select(func.count()).select_from(Message).where(Message.session_id == session_id)
+    ) or 0
+
+
+def _session_to_response(session: Session, msg_count: int) -> SessionResponse:
+    """Map a Session model to SessionResponse with message_count."""
+    return SessionResponse(
+        **{k: getattr(session, k) for k in SessionResponse.model_fields if k != "message_count"},
+        message_count=msg_count,
+    )
+
+
 # ── Sessions ──────────────────────────────────────────────────────────────────
 
 
@@ -55,10 +74,7 @@ async def create_session(
     Valida que o project_id pertence ao tenant antes de criar,
     prevenindo vinculação a projetos de outros tenants.
     """
-    # Validar ownership do projeto
-    project = await scope.db.scalar(scope.where_id(Project, project_id))
-    if not project:
-        raise not_found_error("projeto")
+    await scope.get_or_404(Project, project_id, "projeto")
 
     resolved_workflow_id = await _resolve_workflow_id(scope, workflow_id)
 
@@ -72,10 +88,7 @@ async def create_session(
     await scope.db.commit()
     await scope.db.refresh(session)
 
-    return SessionResponse(
-        **{k: getattr(session, k) for k in SessionResponse.model_fields if k != "message_count"},
-        message_count=0,
-    )
+    return _session_to_response(session, 0)
 
 
 async def list_sessions(
@@ -111,18 +124,8 @@ async def list_sessions(
 
     items = []
     for s in rows:
-        msg_count = (
-            await scope.db.scalar(
-                select(func.count()).select_from(Message).where(Message.session_id == s.id)
-            )
-            or 0
-        )
-        items.append(
-            SessionResponse(
-                **{k: getattr(s, k) for k in SessionResponse.model_fields if k != "message_count"},
-                message_count=msg_count,
-            )
-        )
+        msg_count = await _message_count(scope, s.id)
+        items.append(_session_to_response(s, msg_count))
 
     return SessionListResponse(
         items=items,
@@ -135,21 +138,9 @@ async def list_sessions(
 
 async def get_session(scope: TenantScope, session_id: str) -> SessionResponse:
     """Busca sessão por ID. Retorna 404 para IDs de outros tenants."""
-    session = await scope.db.scalar(scope.where_id(Session, session_id))
-    if not session:
-        raise not_found_error("sessão")
-
-    msg_count = (
-        await scope.db.scalar(
-            select(func.count()).select_from(Message).where(Message.session_id == session.id)
-        )
-        or 0
-    )
-
-    return SessionResponse(
-        **{k: getattr(session, k) for k in SessionResponse.model_fields if k != "message_count"},
-        message_count=msg_count,
-    )
+    session = await scope.get_or_404(Session, session_id, "sessão")
+    msg_count = await _message_count(scope, session.id)
+    return _session_to_response(session, msg_count)
 
 
 async def update_session(
@@ -158,29 +149,13 @@ async def update_session(
     payload: SessionUpdate,
 ) -> SessionResponse:
     """Atualiza campos da sessão. Retorna 404 para IDs de outros tenants."""
-    session = await scope.db.scalar(scope.where_id(Session, session_id))
-    if not session:
-        raise not_found_error("sessão")
-
-    data = payload.model_dump(exclude_unset=True)
-    for field, value in data.items():
-        setattr(session, field, value)
-
-    session.updated_at = datetime.utcnow().replace(microsecond=0)
+    session = await scope.get_or_404(Session, session_id, "sessão")
+    apply_partial_update(session, payload)
     await scope.db.commit()
     await scope.db.refresh(session)
 
-    msg_count = (
-        await scope.db.scalar(
-            select(func.count()).select_from(Message).where(Message.session_id == session.id)
-        )
-        or 0
-    )
-
-    return SessionResponse(
-        **{k: getattr(session, k) for k in SessionResponse.model_fields if k != "message_count"},
-        message_count=msg_count,
-    )
+    msg_count = await _message_count(scope, session.id)
+    return _session_to_response(session, msg_count)
 
 
 # ── Messages ─────────────────────────────────────────────────────────────────
@@ -195,17 +170,9 @@ async def add_message(
 
     message_index é calculado automaticamente baseado na contagem atual.
     """
-    session = await scope.db.scalar(scope.where_id(Session, session_id))
-    if not session:
-        raise not_found_error("sessão")
+    await scope.get_or_404(Session, session_id, "sessão")
 
-    # Calcular próximo message_index
-    current_count = (
-        await scope.db.scalar(
-            select(func.count()).select_from(Message).where(Message.session_id == session_id)
-        )
-        or 0
-    )
+    current_count = await _message_count(scope, session_id)
 
     message = Message(
         session_id=session_id,
@@ -227,34 +194,14 @@ async def list_messages(
     size: int = 50,
 ) -> MessageListResponse:
     """Lista mensagens de uma sessão com paginação. Valida ownership."""
-    # Validar que a sessão pertence ao tenant
-    session = await scope.db.scalar(scope.where_id(Session, session_id))
-    if not session:
-        raise not_found_error("sessão")
+    await scope.get_or_404(Session, session_id, "sessão")
 
-    offset = (page - 1) * size
-
-    count_stmt = (
-        select(func.count())
-        .select_from(Message)
-        .where(Message.session_id == session_id)
-        .where(Message.tenant_id == scope.tenant_id)
-    )
-    total: int = await scope.db.scalar(count_stmt) or 0
-
-    stmt = (
-        scope.select(Message, Message.session_id == session_id)
-        .order_by(Message.message_index.asc())
-        .offset(offset)
-        .limit(size)
-    )
-    rows = await scope.db.scalars(stmt)
-    items = [MessageResponse.model_validate(m) for m in rows]
-
-    return MessageListResponse(
-        items=items,
-        total=total,
+    return await paginate(
+        scope=scope,
+        model=Message,
+        response_cls=MessageResponse,
         page=page,
         size=size,
-        pages=math.ceil(total / size) if total > 0 else 0,
+        extra_filters=[Message.session_id == session_id],
+        order_by=Message.message_index.asc(),
     )

@@ -10,7 +10,6 @@ from typing import Any
 
 from sqlalchemy import desc, select
 
-from app.core.exceptions import not_found_error
 from app.db.tenant import TenantScope
 from app.modules.artifacts.models import ARTIFACT_STATUS_DRAFT, Artifact, ArtifactVersion
 from app.modules.artifacts.renderers.markdown import render_artifact_to_markdown
@@ -83,9 +82,7 @@ def _calculate_coverage_snapshot(state: ArtifactState) -> dict[str, Any]:
 
 async def create_artifact(scope: TenantScope, data: ArtifactCreate) -> Artifact:
     """Cria um novo artefato para um projeto."""
-    project = await scope.db.scalar(scope.where_id(Project, data.project_id))
-    if not project:
-        raise not_found_error("projeto")
+    await scope.get_or_404(Project, data.project_id, "projeto")
 
     initial_state = {"sections": [], "metadata": {"total_coverage": 0.0}}
     artifact = Artifact(
@@ -117,10 +114,7 @@ async def create_artifact(scope: TenantScope, data: ArtifactCreate) -> Artifact:
 
 async def get_artifact(scope: TenantScope, artifact_id: str) -> Artifact:
     """Recupera um artefato pelo ID com isolamento de tenant."""
-    artifact = await scope.db.scalar(scope.where_id(Artifact, artifact_id))
-    if not artifact:
-        raise not_found_error("artefato")
-    return artifact
+    return await scope.get_or_404(Artifact, artifact_id, "artefato")
 
 
 async def update_artifact(scope: TenantScope, artifact_id: str, data: ArtifactUpdate) -> Artifact:
