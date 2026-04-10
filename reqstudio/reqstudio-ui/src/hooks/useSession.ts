@@ -133,15 +133,17 @@ export function useSession({ sessionId }: UseSessionOptions) {
         .then(() => {
           queryClient.invalidateQueries({ queryKey: ['session', sessionId] })
         })
-        .catch(() => {
-          // silenciar erros de resume; UX já trata falhas por erro visível
+        .catch((err) => {
+          console.warn('[useSession] Failed to resume session:', sessionId, err)
         })
     }
 
     return () => {
       // Pause on unmount (navigating away) — best effort
       if (session.status === 'active') {
-        sessionsApi.updateStatus(sessionId, 'paused').catch(() => {})
+        sessionsApi.updateStatus(sessionId, 'paused').catch((err) => {
+          console.warn('[useSession] Failed to pause session on unmount:', sessionId, err)
+        })
       }
     }
   }, [sessionId, session?.status, session, queryClient, sessionTimedOut])
@@ -290,8 +292,16 @@ export function useSession({ sessionId }: UseSessionOptions) {
   // ── Pause (manual) ──
   const pause = useCallback(async () => {
     if (!sessionId || session?.status !== 'active') return
-    await sessionsApi.updateStatus(sessionId, 'paused')
-    queryClient.invalidateQueries({ queryKey: ['session', sessionId] })
+    try {
+      await sessionsApi.updateStatus(sessionId, 'paused')
+      queryClient.invalidateQueries({ queryKey: ['session', sessionId] })
+    } catch (err) {
+      console.error('[useSession] Failed to pause session:', sessionId, err)
+      setError({
+        code: 'PAUSE_ERROR',
+        message: 'Não foi possível pausar a sessão. Tente novamente.',
+      })
+    }
   }, [sessionId, session?.status, queryClient])
 
   return {
