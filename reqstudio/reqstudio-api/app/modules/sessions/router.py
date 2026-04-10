@@ -1,11 +1,13 @@
 """Sessions router — CRUD endpoints + SSE streaming (Stories 5.1, 5.5)."""
 
 import json
+import logging
 
 from fastapi import APIRouter, Depends, Query
 from fastapi.responses import StreamingResponse
 
 from app.core.dependencies import get_current_user
+from app.core.exceptions import GuidedRecoveryError
 from app.db.tenant import TenantScope, get_tenant_scope
 from app.modules.auth.models import User
 from app.modules.engine.elicitation import elicit
@@ -20,6 +22,8 @@ from app.modules.sessions.schemas import (
     SessionUpdate,
 )
 from app.schemas.response import ApiResponse
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["sessions"])
 
@@ -164,9 +168,23 @@ async def elicit_stream(
                     }, ensure_ascii=False)
                     yield f"event: message\ndata: {data}\n\n"
         except Exception as e:
+            if isinstance(e, GuidedRecoveryError):
+                error_code = e.code
+                error_message = e.message
+            else:
+                error_code = "INTERNAL_ERROR"
+                error_message = str(e)
+            logger.error(
+                "SSE elicitation stream error",
+                exc_info=True,
+                extra={
+                    "session_id": session_id,
+                    "error_code": error_code,
+                },
+            )
             error_data = json.dumps({
-                "code": getattr(e, "code", "INTERNAL_ERROR"),
-                "message": str(e),
+                "code": error_code,
+                "message": error_message,
             }, ensure_ascii=False)
             yield f"event: error\ndata: {error_data}\n\n"
 

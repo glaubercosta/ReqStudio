@@ -8,6 +8,8 @@ Invariants (Lição 9 do projeto):
 
 from __future__ import annotations
 
+import logging
+
 import magic  # type: ignore[import-not-found]
 
 from sqlalchemy import func, select
@@ -27,6 +29,8 @@ from app.modules.documents.parsers import parse_markdown, parse_pdf
 from app.modules.documents.schemas import DocumentListResponse, DocumentResponse
 from app.modules.projects.models import Project
 from app.core.exceptions import GuidedRecoveryError, ErrorCode, Severity
+
+logger = logging.getLogger(__name__)
 
 
 # ── Custom Errors ─────────────────────────────────────────────────────────────
@@ -135,6 +139,16 @@ async def upload_document(
         doc.status = DOCUMENT_STATUS_READY
         chunk_count = len(raw_chunks)
     except Exception:
+        logger.error(
+            "Document parsing failed",
+            exc_info=True,
+            extra={
+                "document_id": doc.id,
+                "filename": filename,
+                "mime_type": mime_type,
+                "size_bytes": len(content),
+            },
+        )
         doc.status = DOCUMENT_STATUS_ERROR
 
     await scope.db.commit()

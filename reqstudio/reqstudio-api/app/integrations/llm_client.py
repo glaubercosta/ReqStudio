@@ -164,6 +164,11 @@ async def stream_completion(
             )
             metrics.cost_usd = cost or 0.0
         except Exception:
+            logger.debug(
+                "Could not calculate LLM completion cost",
+                exc_info=True,
+                extra={"model": target_model},
+            )
             metrics.cost_usd = 0.0
 
         logger.info(

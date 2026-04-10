@@ -13,8 +13,9 @@ import asyncio
 from contextlib import asynccontextmanager
 from typing import AsyncIterator
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from app.core.config import settings
 from app.core.error_handlers import register_error_handlers
@@ -55,13 +56,25 @@ def create_app() -> FastAPI:
 
     # --- Rate Limiting (slowapi) ---
     try:
-        from slowapi import Limiter, _rate_limit_exceeded_handler
+        from slowapi import Limiter
         from slowapi.errors import RateLimitExceeded
         from slowapi.util import get_remote_address
 
+        from app.core.exceptions import rate_limit_error
+
         limiter = Limiter(key_func=get_remote_address)
         app.state.limiter = limiter
-        app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+        async def _rate_limit_handler(request: Request, exc: RateLimitExceeded) -> JSONResponse:
+            err = rate_limit_error()
+            request_id = getattr(request.state, "request_id", "unknown")
+            return JSONResponse(
+                status_code=err.status_code,
+                content=err.to_dict(),
+                headers={"X-Request-ID": request_id},
+            )
+
+        app.add_exception_handler(RateLimitExceeded, _rate_limit_handler)
         logger.info("Rate limiting enabled via slowapi")
     except ImportError:
         logger.warning("slowapi not installed — rate limiting disabled")

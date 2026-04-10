@@ -3,26 +3,7 @@
  * Usa o mesmo fetch/interceptor de 401 do apiClient base.
  */
 
-import { API_BASE, getAccessToken, ReqStudioApiError } from './apiClient'
-
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    ...(init?.headers as Record<string, string> ?? {}),
-  }
-  const token = getAccessToken()
-  if (token) headers['Authorization'] = `Bearer ${token}`
-
-  const res = await fetch(`${API_BASE}${path}`, {
-    ...init,
-    credentials: 'include',
-    headers,
-  })
-
-  const body = await res.json()
-  if (!res.ok) throw new ReqStudioApiError(body.error, res.status)
-  return body
-}
+import { request } from './apiClient'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
