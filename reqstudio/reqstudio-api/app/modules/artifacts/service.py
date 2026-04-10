@@ -7,15 +7,13 @@ import json
 import re
 from typing import Any, Sequence
 
-from sqlalchemy import select, desc
+from sqlalchemy import desc, select
 
-from app.core.exceptions import not_found_error
 from app.db.tenant import TenantScope
-from app.modules.artifacts.models import Artifact, ArtifactVersion, ARTIFACT_STATUS_DRAFT
-from app.modules.artifacts.schemas import ArtifactCreate, ArtifactUpdate, ArtifactState
+from app.modules.artifacts.models import ARTIFACT_STATUS_DRAFT, Artifact, ArtifactVersion
 from app.modules.artifacts.renderers.markdown import render_artifact_to_markdown
+from app.modules.artifacts.schemas import ArtifactCreate, ArtifactState, ArtifactUpdate
 from app.modules.projects.models import Project
-
 
 LOW_COVERAGE_THRESHOLD = 0.3
 HIGH_COVERAGE_THRESHOLD = 0.7
@@ -81,9 +79,7 @@ def _calculate_coverage_snapshot(state: ArtifactState) -> dict[str, Any]:
 
 async def create_artifact(scope: TenantScope, data: ArtifactCreate) -> Artifact:
     """Cria um novo artefato para um projeto."""
-    project = await scope.db.scalar(scope.where_id(Project, data.project_id))
-    if not project:
-        raise not_found_error("projeto")
+    await scope.get_or_404(Project, data.project_id, "projeto")
         
     initial_state = {"sections": [], "metadata": {"total_coverage": 0.0}}
     artifact = Artifact(
@@ -115,10 +111,7 @@ async def create_artifact(scope: TenantScope, data: ArtifactCreate) -> Artifact:
 
 async def get_artifact(scope: TenantScope, artifact_id: str) -> Artifact:
     """Recupera um artefato pelo ID com isolamento de tenant."""
-    artifact = await scope.db.scalar(scope.where_id(Artifact, artifact_id))
-    if not artifact:
-        raise not_found_error("artefato")
-    return artifact
+    return await scope.get_or_404(Artifact, artifact_id, "artefato")
 
 
 async def update_artifact(scope: TenantScope, artifact_id: str, data: ArtifactUpdate) -> Artifact:

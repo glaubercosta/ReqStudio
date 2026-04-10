@@ -9,25 +9,21 @@ Invariants (Lição 9 do projeto):
 from __future__ import annotations
 
 import magic  # type: ignore[import-not-found]
-
 from sqlalchemy import func, select
-from sqlalchemy.orm import selectinload
 
-from app.core.exceptions import not_found_error
+from app.core.exceptions import ErrorCode, GuidedRecoveryError, Severity, not_found_error
 from app.db.tenant import TenantScope
 from app.modules.documents.models import (
     ALLOWED_MIME_TYPES,
-    MAX_UPLOAD_BYTES,
     DOCUMENT_STATUS_ERROR,
     DOCUMENT_STATUS_READY,
+    MAX_UPLOAD_BYTES,
     Document,
     DocumentChunk,
 )
 from app.modules.documents.parsers import parse_markdown, parse_pdf
 from app.modules.documents.schemas import DocumentListResponse, DocumentResponse
 from app.modules.projects.models import Project
-from app.core.exceptions import GuidedRecoveryError, ErrorCode, Severity
-
 
 # ── Custom Errors ─────────────────────────────────────────────────────────────
 
@@ -95,9 +91,7 @@ async def upload_document(
     """Valida, persiste e parseia um documento de referência."""
 
     # 1. Projeto existe e pertence ao tenant
-    project = await scope.db.scalar(scope.where_id(Project, project_id))
-    if not project:
-        raise not_found_error("projeto")
+    await scope.get_or_404(Project, project_id, "projeto")
 
     # 2. Tamanho
     if len(content) > MAX_UPLOAD_BYTES:
@@ -147,9 +141,7 @@ async def list_documents(
     project_id: str,
 ) -> DocumentListResponse:
     # Valida projeto
-    project = await scope.db.scalar(scope.where_id(Project, project_id))
-    if not project:
-        raise not_found_error("projeto")
+    await scope.get_or_404(Project, project_id, "projeto")
 
     # Busca documentos com contagem de chunks via subquery
     stmt = scope.select(Document, Document.project_id == project_id)
@@ -180,9 +172,7 @@ async def delete_document(
     document_id: str,
 ) -> None:
     # Valida projeto
-    project = await scope.db.scalar(scope.where_id(Project, project_id))
-    if not project:
-        raise not_found_error("projeto")
+    await scope.get_or_404(Project, project_id, "projeto")
 
     doc = await scope.db.scalar(
         scope.select(Document, Document.id == document_id, Document.project_id == project_id)

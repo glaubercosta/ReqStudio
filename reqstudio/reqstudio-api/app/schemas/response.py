@@ -15,3 +15,20 @@ class ApiResponse(BaseModel, Generic[T]):
     """
 
     data: T
+
+
+ItemT = TypeVar("ItemT")
+
+
+class PaginatedList(BaseModel, Generic[ItemT]):
+    """Schema genérico para respostas paginadas.
+
+    Substitui as repetições de items/total/page/size/pages
+    em ProjectListResponse, SessionListResponse, MessageListResponse, etc.
+    """
+
+    items: list[ItemT]
+    total: int
+    page: int
+    size: int
+    pages: int
