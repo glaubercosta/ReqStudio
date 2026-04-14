@@ -109,4 +109,4 @@ jobs:
         run: docker build -t reqstudio-api:ci reqstudio/reqstudio-api/
 
       - name: Build Frontend image
-        run: docker build -t reqstudio-frontend:ci reqstudio/reqstudio-ui/
+        run: docker build --build-arg VITE_API_URL=http://localhost:8000 -t reqstudio-frontend:ci reqstudio/reqstudio-ui/
