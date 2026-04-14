@@ -22,9 +22,7 @@ class Settings(BaseSettings):
 
     # --- Database ---
     DATABASE_URL: str = "postgresql+asyncpg://reqstudio:reqstudio@db:5432/reqstudio"
-    DATABASE_TEST_URL: str = (
-        "postgresql+asyncpg://reqstudio:reqstudio@db:5432/reqstudio_test"
-    )
+    DATABASE_TEST_URL: str = "postgresql+asyncpg://reqstudio:reqstudio@db:5432/reqstudio_test"
 
     # --- Postgres (Docker Compose) ---
     POSTGRES_USER: str = "reqstudio"

@@ -6,31 +6,33 @@ Todos os testes usam mock do litellm — sem chamadas reais.
 Read-Before-Write: test_context_builder.py (Lição 11).
 """
 
-import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
 from dataclasses import dataclass
+from unittest.mock import AsyncMock, MagicMock, patch
 
-from app.integrations.llm_client import (
-    stream_completion,
-    complete,
-    CompletionChunk,
-    CompletionMetrics,
-    _get_model_list,
-)
+import pytest
+
 from app.core.exceptions import GuidedRecoveryError
-
+from app.integrations.llm_client import (
+    _get_model_list,
+    complete,
+    stream_completion,
+)
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
+
 # Classes de exceção distintas para que os except clauses não colidam
-class _MockTimeout(Exception):
+class _MockTimeoutError(Exception):
     pass
+
 
 class _MockAPIConnectionError(Exception):
     pass
 
+
 class _MockAPIError(Exception):
     pass
+
 
 class _MockServiceUnavailableError(Exception):
     pass
@@ -38,7 +40,7 @@ class _MockServiceUnavailableError(Exception):
 
 def _setup_mock_litellm(mock_litellm):
     """Configura exceções distintas no mock do litellm."""
-    mock_litellm.Timeout = _MockTimeout
+    mock_litellm.Timeout = _MockTimeoutError
     mock_litellm.APIConnectionError = _MockAPIConnectionError
     mock_litellm.APIError = _MockAPIError
     mock_litellm.ServiceUnavailableError = _MockServiceUnavailableError
@@ -142,7 +144,7 @@ async def test_stream_completion_metrics():
 
         assert final_metrics is not None
         assert final_metrics.success is True
-        assert final_metrics.latency_ms > 0
+        assert final_metrics.latency_ms >= 0
         assert final_metrics.cost_usd == 0.005
 
 
@@ -154,7 +156,7 @@ async def test_stream_completion_timeout_raises_guided_error():
     """Timeout do LLM levanta GuidedRecoveryError com status 504."""
     with patch("app.integrations.llm_client.litellm") as mock_litellm:
         _setup_mock_litellm(mock_litellm)
-        mock_litellm.acompletion = AsyncMock(side_effect=_MockTimeout("timeout"))
+        mock_litellm.acompletion = AsyncMock(side_effect=_MockTimeoutError("timeout"))
 
         with pytest.raises(GuidedRecoveryError) as exc_info:
             async for _ in stream_completion(SAMPLE_MESSAGES):

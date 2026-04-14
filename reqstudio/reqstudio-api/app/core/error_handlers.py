@@ -38,9 +38,7 @@ def register_error_handlers(app: FastAPI) -> None:
     """Registra todos os error handlers na instância FastAPI."""
 
     @app.exception_handler(GuidedRecoveryError)
-    async def guided_recovery_handler(
-        request: Request, exc: GuidedRecoveryError
-    ) -> JSONResponse:
+    async def guided_recovery_handler(request: Request, exc: GuidedRecoveryError) -> JSONResponse:
         request_id = getattr(request.state, "request_id", "unknown")
         logger.warning(
             "GuidedRecoveryError",
@@ -62,8 +60,7 @@ def register_error_handlers(app: FastAPI) -> None:
         request: Request, exc: RequestValidationError
     ) -> JSONResponse:
         detail = "; ".join(
-            f"{' → '.join(str(loc) for loc in err['loc'])}: {err['msg']}"
-            for err in exc.errors()
+            f"{' → '.join(str(loc) for loc in err['loc'])}: {err['msg']}" for err in exc.errors()
         )
         err = validation_error(detail)
         request_id = getattr(request.state, "request_id", "unknown")
@@ -74,9 +71,7 @@ def register_error_handlers(app: FastAPI) -> None:
         )
 
     @app.exception_handler(StarletteHTTPException)
-    async def http_exception_handler(
-        request: Request, exc: StarletteHTTPException
-    ) -> JSONResponse:
+    async def http_exception_handler(request: Request, exc: StarletteHTTPException) -> JSONResponse:
         request_id = getattr(request.state, "request_id", "unknown")
         error_code = _HTTP_CODE_MAP.get(exc.status_code, ErrorCode.INTERNAL_ERROR)
         err = GuidedRecoveryError(
@@ -94,15 +89,13 @@ def register_error_handlers(app: FastAPI) -> None:
         )
 
     @app.exception_handler(Exception)
-    async def generic_exception_handler(
-        request: Request, exc: Exception
-    ) -> JSONResponse:
+    async def generic_exception_handler(request: Request, exc: Exception) -> JSONResponse:
         request_id = getattr(request.state, "request_id", "unknown")
         logger.exception(
             "Unhandled exception",
             extra={"request_id": request_id, "path": str(request.url)},
         )
-        
+
         # Story 5.5.x: Injeção de Visibilidade
         detail = str(exc) if settings.DEBUG else ""
         err = internal_error(detail=detail)

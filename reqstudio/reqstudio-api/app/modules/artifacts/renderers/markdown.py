@@ -6,7 +6,7 @@ Supports 'business' and 'technical' views.
 
 import re
 
-from app.modules.artifacts.schemas import ArtifactState, ArtifactSection
+from app.modules.artifacts.schemas import ArtifactSection, ArtifactState
 
 _GHERKIN_EN_RE = re.compile(r"\b(given|when|then)\b", flags=re.IGNORECASE)
 _GHERKIN_PT_RE = re.compile(r"\b(dado|quando|ent[aã]o)\b", flags=re.IGNORECASE)
@@ -14,10 +14,7 @@ _GHERKIN_PT_RE = re.compile(r"\b(dado|quando|ent[aã]o)\b", flags=re.IGNORECASE)
 
 def _contains_gherkin(content: str) -> bool:
     """Detecta presença de passos Gherkin em inglês ou português."""
-    return (
-        len(_GHERKIN_EN_RE.findall(content)) >= 3
-        or len(_GHERKIN_PT_RE.findall(content)) >= 3
-    )
+    return len(_GHERKIN_EN_RE.findall(content)) >= 3 or len(_GHERKIN_PT_RE.findall(content)) >= 3
 
 
 def render_section_to_markdown(
@@ -41,9 +38,8 @@ def render_section_to_markdown(
     # Na visão técnica, podemos adicionar metadados extras ou formatação Gherkin
     if view == "technical":
         # Se detectarmos passos Gherkin, garantimos bloco de código quando necessário.
-        if _contains_gherkin(content):
-            if "```" not in content:
-                content = f"```gherkin\n{content}\n```"
+        if _contains_gherkin(content) and "```" not in content:
+            content = f"```gherkin\n{content}\n```"
 
         # Adiciona ID técnico no cabeçalho para desenvolvedores
         title = f"{title} (`{section.id}`)"
@@ -65,10 +61,9 @@ def render_artifact_to_markdown(
 
     # Cabeçalho Principal
     view_label = "Visão de Negócio" if view == "business" else "Especificação Técnica"
+    coverage_pct = state.metadata.total_coverage * 100
     lines.append(f"# {title}")
-    lines.append(
-        f"> **Status**: {view_label} | **Cobertura Global**: {state.metadata.total_coverage*100:.0f}%"
-    )
+    lines.append(f"> **Status**: {view_label} | **Cobertura Global**: {coverage_pct:.0f}%")
     lines.append("\n---\n")
 
     if not state.sections:

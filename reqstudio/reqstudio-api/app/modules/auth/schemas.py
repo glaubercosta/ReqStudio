@@ -4,8 +4,8 @@ from pydantic import BaseModel, EmailStr, field_validator
 
 from app.core.exceptions import ErrorCode, GuidedRecoveryError, Severity
 
-
 # ── Story 2.1: Registro ───────────────────────────────────────────────────────
+
 
 class UserCreate(BaseModel):
     """Payload para registro de novo usuário."""
@@ -45,6 +45,7 @@ class RegisterResponse(BaseModel):
 
 
 # ── Story 2.2: Login ──────────────────────────────────────────────────────────
+
 
 class LoginRequest(BaseModel):
     """Payload de login."""

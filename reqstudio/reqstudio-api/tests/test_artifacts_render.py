@@ -10,8 +10,8 @@ Verifies:
 import pytest
 from httpx import AsyncClient
 
-
 # ── Helpers ───────────────────────────────────────────────────────────────────
+
 
 def _auth(token: dict) -> dict:
     return {"Authorization": f"Bearer {token['access_token']}"}
@@ -22,86 +22,121 @@ async def _create_base_artifact(client: AsyncClient, token: dict) -> str:
     p_res = await client.post(
         "/api/v1/projects",
         json={"name": "Render Project", "business_domain": "Finance"},
-        headers=_auth(token)
+        headers=_auth(token),
     )
     project_id = p_res.json()["data"]["id"]
-    
+
     # 2. Create Artifact
     a_res = await client.post(
         "/api/v1/artifacts/",
         json={"project_id": project_id, "artifact_type": "prd", "title": "Spec 1.0"},
-        headers=_auth(token)
+        headers=_auth(token),
     )
     return a_res.json()["data"]["id"]
 
 
 # ── Tests ───────────────────────────────────────────────────────────────────
 
+
 @pytest.mark.asyncio
 async def test_render_business_view(client: AsyncClient, tenant_a_token):
     artifact_id = await _create_base_artifact(client, tenant_a_token)
-    
+
     # Update with some content
     state = {
         "sections": [
-            {"id": "intro", "title": "Introdução", "content": "Texto de negócio.", "coverage": 1.0, "sources": []}
+            {
+                "id": "intro",
+                "title": "Introdução",
+                "content": "Texto de negócio.",
+                "coverage": 1.0,
+                "sources": [],
+            }
         ],
-        "metadata": {"total_coverage": 1.0}
+        "metadata": {"total_coverage": 1.0},
     }
-    await client.post(f"/api/v1/artifacts/{artifact_id}/update", json={"artifact_state": state}, headers=_auth(tenant_a_token))
-    
+    await client.post(
+        f"/api/v1/artifacts/{artifact_id}/update",
+        json={"artifact_state": state},
+        headers=_auth(tenant_a_token),
+    )
+
     # Render
-    res = await client.get(f"/api/v1/artifacts/{artifact_id}/render?view=business", headers=_auth(tenant_a_token))
+    res = await client.get(
+        f"/api/v1/artifacts/{artifact_id}/render?view=business", headers=_auth(tenant_a_token)
+    )
     assert res.status_code == 200
     md = res.json()["data"]["markdown"]
-    
+
     assert "# Spec 1.0" in md
     assert "Visão de Negócio" in md
     assert "## Introdução" in md
     assert "Texto de negócio." in md
-    assert "Introdução (intro)" not in md # Technical detail hidden
+    assert "Introdução (intro)" not in md  # Technical detail hidden
 
 
 @pytest.mark.asyncio
 async def test_render_technical_view_with_gherkin(client: AsyncClient, tenant_a_token):
     artifact_id = await _create_base_artifact(client, tenant_a_token)
-    
+
     # Update with Gherkin content
     state = {
         "sections": [
-            {"id": "req-1", "title": "Login", "content": "Given user at login\nWhen enters pass\nThen redirect dashboard.", "coverage": 1.0, "sources": []}
+            {
+                "id": "req-1",
+                "title": "Login",
+                "content": "Given user at login\nWhen enters pass\nThen redirect dashboard.",
+                "coverage": 1.0,
+                "sources": [],
+            }
         ],
-        "metadata": {"total_coverage": 1.0}
+        "metadata": {"total_coverage": 1.0},
     }
-    await client.post(f"/api/v1/artifacts/{artifact_id}/update", json={"artifact_state": state}, headers=_auth(tenant_a_token))
-    
+    await client.post(
+        f"/api/v1/artifacts/{artifact_id}/update",
+        json={"artifact_state": state},
+        headers=_auth(tenant_a_token),
+    )
+
     # Render Technical
-    res = await client.get(f"/api/v1/artifacts/{artifact_id}/render?view=technical", headers=_auth(tenant_a_token))
+    res = await client.get(
+        f"/api/v1/artifacts/{artifact_id}/render?view=technical", headers=_auth(tenant_a_token)
+    )
     assert res.status_code == 200
     md = res.json()["data"]["markdown"]
-    
+
     assert "Especificação Técnica" in md
-    assert "## Login (`req-1`)" in md # Technical ID present
-    assert "```gherkin" in md # Auto-detected Gherkin block
+    assert "## Login (`req-1`)" in md  # Technical ID present
+    assert "```gherkin" in md  # Auto-detected Gherkin block
 
 
 @pytest.mark.asyncio
 async def test_render_low_coverage_warning(client: AsyncClient, tenant_a_token):
     artifact_id = await _create_base_artifact(client, tenant_a_token)
-    
+
     # Update with Low Coverage
     state = {
         "sections": [
-            {"id": "draft-sec", "title": "Ponto Obscuro", "content": "Só uma ideia...", "coverage": 0.1, "sources": []}
+            {
+                "id": "draft-sec",
+                "title": "Ponto Obscuro",
+                "content": "Só uma ideia...",
+                "coverage": 0.1,
+                "sources": [],
+            }
         ],
-        "metadata": {"total_coverage": 0.1}
+        "metadata": {"total_coverage": 0.1},
     }
-    await client.post(f"/api/v1/artifacts/{artifact_id}/update", json={"artifact_state": state}, headers=_auth(tenant_a_token))
-    
+    await client.post(
+        f"/api/v1/artifacts/{artifact_id}/update",
+        json={"artifact_state": state},
+        headers=_auth(tenant_a_token),
+    )
+
     # Render
     res = await client.get(f"/api/v1/artifacts/{artifact_id}/render", headers=_auth(tenant_a_token))
     md = res.json()["data"]["markdown"]
-    
+
     assert "⚠️ Pendente de aprofundamento" in md
     assert "[!WARNING]" in md
 
@@ -114,7 +149,7 @@ async def test_render_business_view_show_ids_toggle(client: AsyncClient, tenant_
         "sections": [
             {"id": "s-1", "title": "Objetivo", "content": "Texto", "coverage": 1.0, "sources": []}
         ],
-        "metadata": {"total_coverage": 1.0}
+        "metadata": {"total_coverage": 1.0},
     }
     await client.post(
         f"/api/v1/artifacts/{artifact_id}/update",
@@ -147,7 +182,7 @@ async def test_render_preserves_section_order_in_both_views(client: AsyncClient,
             {"id": "s-2", "title": "Segunda", "content": "B", "coverage": 1.0, "sources": []},
             {"id": "s-3", "title": "Terceira", "content": "C", "coverage": 1.0, "sources": []},
         ],
-        "metadata": {"total_coverage": 1.0}
+        "metadata": {"total_coverage": 1.0},
     }
     await client.post(
         f"/api/v1/artifacts/{artifact_id}/update",
@@ -175,7 +210,9 @@ async def test_render_preserves_section_order_in_both_views(client: AsyncClient,
 
 
 @pytest.mark.asyncio
-async def test_render_technical_gherkin_portuguese_case_insensitive_no_double_wrap(client: AsyncClient, tenant_a_token):
+async def test_render_technical_gherkin_portuguese_case_insensitive_no_double_wrap(
+    client: AsyncClient, tenant_a_token
+):
     artifact_id = await _create_base_artifact(client, tenant_a_token)
 
     state = {
@@ -183,19 +220,29 @@ async def test_render_technical_gherkin_portuguese_case_insensitive_no_double_wr
             {
                 "id": "pt-1",
                 "title": "Cenário PT",
-                "content": "dado usuário autenticado\nquando clicar em sair\nentão deve encerrar sessão",
+                "content": (
+                    "dado usuário autenticado\n"
+                    "quando clicar em sair\n"
+                    "então deve encerrar sessão"
+                ),
                 "coverage": 1.0,
                 "sources": [],
             },
             {
                 "id": "en-1",
                 "title": "Cenário EN",
-                "content": "```gherkin\nGiven user is logged in\nWhen click logout\nThen session ends\n```",
+                "content": (
+                    "```gherkin\n"
+                    "Given user is logged in\n"
+                    "When click logout\n"
+                    "Then session ends\n"
+                    "```"
+                ),
                 "coverage": 1.0,
                 "sources": [],
             },
         ],
-        "metadata": {"total_coverage": 1.0}
+        "metadata": {"total_coverage": 1.0},
     }
     await client.post(
         f"/api/v1/artifacts/{artifact_id}/update",
@@ -219,9 +266,15 @@ async def test_render_empty_section_uses_canonical_placeholder(client: AsyncClie
 
     state = {
         "sections": [
-            {"id": "empty-1", "title": "Seção vazia", "content": "   ", "coverage": 0.9, "sources": []}
+            {
+                "id": "empty-1",
+                "title": "Seção vazia",
+                "content": "   ",
+                "coverage": 0.9,
+                "sources": [],
+            }
         ],
-        "metadata": {"total_coverage": 0.9}
+        "metadata": {"total_coverage": 0.9},
     }
     await client.post(
         f"/api/v1/artifacts/{artifact_id}/update",

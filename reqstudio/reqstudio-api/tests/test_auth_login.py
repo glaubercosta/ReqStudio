@@ -48,7 +48,7 @@ async def test_access_token_claims(client: AsyncClient):
         settings.JWT_SECRET_KEY,
         algorithms=[settings.JWT_ALGORITHM],
     )
-    assert "sub" in payload       # user_id
+    assert "sub" in payload  # user_id
     assert "tenant_id" in payload
     assert "exp" in payload
     assert "iat" in payload

@@ -7,8 +7,8 @@ arquivamento, isolamento cross-tenant e status 404.
 import pytest
 from httpx import AsyncClient
 
-
 # ── Helpers ───────────────────────────────────────────────────────────────────
+
 
 def _auth(token: dict) -> dict:
     return {"Authorization": f"Bearer {token['access_token']}"}
@@ -22,6 +22,7 @@ async def _create(client: AsyncClient, token: dict, **overrides) -> dict:
 
 
 # ── Criação ───────────────────────────────────────────────────────────────────
+
 
 @pytest.mark.asyncio
 async def test_create_project_returns_201(client: AsyncClient, tenant_a_token):
@@ -56,6 +57,7 @@ async def test_create_project_requires_auth(client: AsyncClient):
 
 # ── Listagem e Paginação ──────────────────────────────────────────────────────
 
+
 @pytest.mark.asyncio
 async def test_list_projects_returns_active_by_default(client: AsyncClient, tenant_a_token):
     await _create(client, tenant_a_token, name="P1")
@@ -83,6 +85,7 @@ async def test_list_projects_pagination(client: AsyncClient, tenant_a_token):
 
 # ── Get por ID ────────────────────────────────────────────────────────────────
 
+
 @pytest.mark.asyncio
 async def test_get_project_by_id(client: AsyncClient, tenant_a_token):
     created = await _create(client, tenant_a_token, name="Get Teste")
@@ -104,6 +107,7 @@ async def test_get_nonexistent_project_returns_404(client: AsyncClient, tenant_a
 
 
 # ── Atualização ───────────────────────────────────────────────────────────────
+
 
 @pytest.mark.asyncio
 async def test_update_project_name(client: AsyncClient, tenant_a_token):
@@ -170,6 +174,7 @@ async def test_invalid_status_returns_422(client: AsyncClient, tenant_a_token):
 
 
 # ── Isolamento Multi-Tenant (AC #5) ───────────────────────────────────────────
+
 
 @pytest.mark.asyncio
 async def test_tenant_a_cannot_access_tenant_b_project(

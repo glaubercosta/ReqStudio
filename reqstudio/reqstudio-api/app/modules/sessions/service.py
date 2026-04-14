@@ -12,7 +12,7 @@ from sqlalchemy import func, select
 from app.core.exceptions import not_found_error
 from app.db.tenant import TenantScope
 from app.modules.projects.models import Project
-from app.modules.sessions.models import Message, Session, SESSION_STATUS_ACTIVE
+from app.modules.sessions.models import SESSION_STATUS_ACTIVE, Message, Session
 from app.modules.sessions.schemas import (
     MessageCreate,
     MessageListResponse,
@@ -22,7 +22,6 @@ from app.modules.sessions.schemas import (
     SessionUpdate,
 )
 from app.modules.workflows.models import Workflow
-
 
 # ── Default Workflow ──────────────────────────────────────────────────────────
 
@@ -37,9 +36,7 @@ async def _resolve_workflow_id(scope: TenantScope, workflow_id: str | None) -> s
             raise not_found_error("workflow")
         return wf.id
 
-    wf = await scope.db.scalar(
-        select(Workflow).where(Workflow.name == DEFAULT_WORKFLOW_NAME)
-    )
+    wf = await scope.db.scalar(select(Workflow).where(Workflow.name == DEFAULT_WORKFLOW_NAME))
     if not wf:
         raise not_found_error("workflow")
     return wf.id
@@ -97,11 +94,7 @@ async def list_sessions(
 
     base_where = (Session.tenant_id == scope.tenant_id, Session.project_id == project_id)
 
-    count_stmt = (
-        select(func.count())
-        .select_from(Session)
-        .where(*base_where)
-    )
+    count_stmt = select(func.count()).select_from(Session).where(*base_where)
     if status:
         count_stmt = count_stmt.where(Session.status.in_(status))
     total: int = await scope.db.scalar(count_stmt) or 0
@@ -118,13 +111,18 @@ async def list_sessions(
 
     items = []
     for s in rows:
-        msg_count = await scope.db.scalar(
-            select(func.count()).select_from(Message).where(Message.session_id == s.id)
-        ) or 0
-        items.append(SessionResponse(
-            **{k: getattr(s, k) for k in SessionResponse.model_fields if k != "message_count"},
-            message_count=msg_count,
-        ))
+        msg_count = (
+            await scope.db.scalar(
+                select(func.count()).select_from(Message).where(Message.session_id == s.id)
+            )
+            or 0
+        )
+        items.append(
+            SessionResponse(
+                **{k: getattr(s, k) for k in SessionResponse.model_fields if k != "message_count"},
+                message_count=msg_count,
+            )
+        )
 
     return SessionListResponse(
         items=items,
@@ -141,9 +139,12 @@ async def get_session(scope: TenantScope, session_id: str) -> SessionResponse:
     if not session:
         raise not_found_error("sessão")
 
-    msg_count = await scope.db.scalar(
-        select(func.count()).select_from(Message).where(Message.session_id == session.id)
-    ) or 0
+    msg_count = (
+        await scope.db.scalar(
+            select(func.count()).select_from(Message).where(Message.session_id == session.id)
+        )
+        or 0
+    )
 
     return SessionResponse(
         **{k: getattr(session, k) for k in SessionResponse.model_fields if k != "message_count"},
@@ -169,9 +170,12 @@ async def update_session(
     await scope.db.commit()
     await scope.db.refresh(session)
 
-    msg_count = await scope.db.scalar(
-        select(func.count()).select_from(Message).where(Message.session_id == session.id)
-    ) or 0
+    msg_count = (
+        await scope.db.scalar(
+            select(func.count()).select_from(Message).where(Message.session_id == session.id)
+        )
+        or 0
+    )
 
     return SessionResponse(
         **{k: getattr(session, k) for k in SessionResponse.model_fields if k != "message_count"},
@@ -196,9 +200,12 @@ async def add_message(
         raise not_found_error("sessão")
 
     # Calcular próximo message_index
-    current_count = await scope.db.scalar(
-        select(func.count()).select_from(Message).where(Message.session_id == session_id)
-    ) or 0
+    current_count = (
+        await scope.db.scalar(
+            select(func.count()).select_from(Message).where(Message.session_id == session_id)
+        )
+        or 0
+    )
 
     message = Message(
         session_id=session_id,

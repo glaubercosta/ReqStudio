@@ -11,7 +11,6 @@ import pytest
 
 from app.modules.engine.elicitation import _compute_progress_summary, _resolve_user_display_name
 
-
 # ── Testes de _compute_progress_summary ──────────────────────────────────────
 
 
@@ -90,6 +89,7 @@ def test_compute_progress_summary_returns_all_keys():
 async def test_update_progress_summary_calls_db():
     """Verifica que o update faz a query via scope e atualiza o objeto."""
     from unittest.mock import AsyncMock, MagicMock
+
     from app.modules.engine.elicitation import _update_progress_summary
 
     # Mocks
@@ -97,18 +97,18 @@ async def test_update_progress_summary_calls_db():
     mock_scope = MagicMock()
     mock_scope.db = mock_db
     mock_scope.where_id.return_value = "where_stmt"  # fake stmt
-    
+
     mock_project = MagicMock()
     mock_project.id = "proj-123"
     mock_db.scalar.return_value = mock_project
-    
+
     mock_session = MagicMock()
     mock_session.project_id = "proj-123"
     mock_session.workflow_position = {"current_step": 2}
-    
+
     # Executa
     await _update_progress_summary(mock_scope, mock_session)
-    
+
     # Verifica
     mock_scope.where_id.assert_called()
     mock_db.scalar.assert_awaited()

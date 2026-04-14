@@ -1,7 +1,7 @@
 """Auth service — Story 2.1 (registro) + Story 2.2 (login) + Story 2.3 (refresh)."""
 
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -88,7 +88,7 @@ class AuthService:
 
     async def _persist_refresh_token(self, user_id: str, token: str) -> RefreshToken:
         """Persiste um RefreshToken no banco (armazena apenas o hash)."""
-        expires_at = datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(
+        expires_at = datetime.now(UTC).replace(tzinfo=None) + timedelta(
             days=settings.REFRESH_TOKEN_EXPIRE_DAYS
         )
         rt = RefreshToken(
@@ -120,7 +120,7 @@ class AuthService:
         # 1. Validar assinatura e expiração do JWT
         try:
             payload = decode_token(refresh_jwt)
-        except JWTError:
+        except JWTError as err:
             raise GuidedRecoveryError(
                 code=ErrorCode.SESSION_EXPIRED,
                 message="Sua sessão expirou.",
@@ -128,7 +128,7 @@ class AuthService:
                 actions=[{"label": "Fazer login", "route": "/login"}],
                 severity=Severity.CRITICAL,
                 status_code=401,
-            )
+            ) from err
 
         if payload.get("type") != "refresh":
             raise GuidedRecoveryError(
@@ -142,9 +142,7 @@ class AuthService:
 
         # 2. Buscar token no banco pelo hash
         token_hash = hash_token(refresh_jwt)
-        rt = await self.db.scalar(
-            select(RefreshToken).where(RefreshToken.token_hash == token_hash)
-        )
+        rt = await self.db.scalar(select(RefreshToken).where(RefreshToken.token_hash == token_hash))
 
         if not rt:
             raise GuidedRecoveryError(
@@ -195,7 +193,7 @@ class AuthService:
             )
 
         # 6. Rotation: marcar token atual como usado e criar novo
-        rt.used_at = datetime.now(timezone.utc).replace(tzinfo=None)
+        rt.used_at = datetime.now(UTC).replace(tzinfo=None)
         await self.db.flush()
 
         user_id = rt.user_id
@@ -221,7 +219,7 @@ class AuthService:
 
     async def _revoke_all_user_tokens(self, user_id: str) -> None:
         """Revoga todos os refresh tokens ativos de um usuário."""
-        now = datetime.now(timezone.utc).replace(tzinfo=None)
+        now = datetime.now(UTC).replace(tzinfo=None)
         await self.db.execute(
             update(RefreshToken)
             .where(RefreshToken.user_id == user_id, RefreshToken.revoked_at.is_(None))

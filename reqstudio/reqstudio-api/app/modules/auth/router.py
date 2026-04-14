@@ -70,6 +70,7 @@ async def login(
     user, refresh_token = await service.authenticate(payload.email, payload.password)
 
     from app.core.security import create_access_token
+
     access_token = create_access_token(user_id=user.id, tenant_id=user.tenant_id)
 
     _set_refresh_cookie(response, refresh_token)

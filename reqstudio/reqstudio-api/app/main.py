@@ -8,10 +8,10 @@ Inclui:
   - OpenTelemetry / structured logging
 """
 
-import logging
 import asyncio
+import logging
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from typing import AsyncIterator
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -76,7 +76,6 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
-    from app.modules.sessions.router import router as sessions_router
     from app.modules.artifacts.router import router as artifacts_router
 
     # --- Custom Middleware ---

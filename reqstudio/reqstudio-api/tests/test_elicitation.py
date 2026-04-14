@@ -6,15 +6,16 @@ crash recovery (mensagem salva antes do LLM), e isolamento cross-tenant.
 LLM é mocked. DB é real (SQLite in-memory via conftest).
 """
 
+from unittest.mock import patch
+
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
 from httpx import AsyncClient
 
 from app.core.exceptions import GuidedRecoveryError
 from app.integrations.llm_client import CompletionChunk, CompletionMetrics
 
-
 # ── Helpers ───────────────────────────────────────────────────────────────────
+
 
 def _auth(token: dict) -> dict:
     return {"Authorization": f"Bearer {token['access_token']}"}
@@ -55,8 +56,13 @@ async def _mock_llm_stream(*args, **kwargs):
         content="",
         done=True,
         metrics=CompletionMetrics(
-            model="mock", input_tokens=50, output_tokens=15,
-            total_tokens=65, cost_usd=0.001, latency_ms=200, success=True,
+            model="mock",
+            input_tokens=50,
+            output_tokens=15,
+            total_tokens=65,
+            cost_usd=0.001,
+            latency_ms=200,
+            success=True,
         ),
     )
 
@@ -67,10 +73,10 @@ async def _mock_llm_stream(*args, **kwargs):
 @pytest.mark.asyncio
 async def test_elicit_full_pipeline(client: AsyncClient, tenant_a_token, seed_workflows):
     """Pipeline completo: user msg → context → LLM → assistant msg."""
-    from app.db.tenant import TenantScope
-    from app.modules.engine.elicitation import elicit
     from app.db.session import get_db
+    from app.db.tenant import TenantScope
     from app.main import app
+    from app.modules.engine.elicitation import elicit
 
     project = await _create_project(client, tenant_a_token)
     session = await _create_session(client, tenant_a_token, project["id"])
@@ -106,10 +112,10 @@ async def test_elicit_full_pipeline(client: AsyncClient, tenant_a_token, seed_wo
 @pytest.mark.asyncio
 async def test_elicit_write_ahead_save(client: AsyncClient, tenant_a_token, seed_workflows):
     """Mensagem do user é salva ANTES de chamar o LLM (write-ahead)."""
-    from app.db.tenant import TenantScope
-    from app.modules.engine.elicitation import elicit
     from app.db.session import get_db
+    from app.db.tenant import TenantScope
     from app.main import app
+    from app.modules.engine.elicitation import elicit
 
     project = await _create_project(client, tenant_a_token)
     session = await _create_session(client, tenant_a_token, project["id"])
@@ -125,7 +131,8 @@ async def test_elicit_write_ahead_save(client: AsyncClient, tenant_a_token, seed
 
         yield CompletionChunk(content="Resposta", done=False)
         yield CompletionChunk(
-            content="", done=True,
+            content="",
+            done=True,
             metrics=CompletionMetrics(model="mock", success=True),
         )
 
@@ -141,10 +148,10 @@ async def test_elicit_write_ahead_save(client: AsyncClient, tenant_a_token, seed
 @pytest.mark.asyncio
 async def test_elicit_session_not_found(client: AsyncClient, tenant_a_token, seed_workflows):
     """Sessão inexistente → 404."""
-    from app.db.tenant import TenantScope
-    from app.modules.engine.elicitation import elicit
     from app.db.session import get_db
+    from app.db.tenant import TenantScope
     from app.main import app
+    from app.modules.engine.elicitation import elicit
 
     async for db in app.dependency_overrides[get_db]():
         scope = TenantScope(db=db, tenant_id=tenant_a_token["tenant_id"])
@@ -156,13 +163,16 @@ async def test_elicit_session_not_found(client: AsyncClient, tenant_a_token, see
 
 @pytest.mark.asyncio
 async def test_elicit_cross_tenant_isolation(
-    client: AsyncClient, tenant_a_token, tenant_b_token, seed_workflows,
+    client: AsyncClient,
+    tenant_a_token,
+    tenant_b_token,
+    seed_workflows,
 ):
     """Sessão de outro tenant → 404."""
-    from app.db.tenant import TenantScope
-    from app.modules.engine.elicitation import elicit
     from app.db.session import get_db
+    from app.db.tenant import TenantScope
     from app.main import app
+    from app.modules.engine.elicitation import elicit
 
     project_a = await _create_project(client, tenant_a_token)
     session_a = await _create_session(client, tenant_a_token, project_a["id"])
@@ -178,10 +188,10 @@ async def test_elicit_cross_tenant_isolation(
 @pytest.mark.asyncio
 async def test_elicit_workflow_progression(client: AsyncClient, tenant_a_token, seed_workflows):
     """Cada ciclo de elicitação avança o workflow_position."""
-    from app.db.tenant import TenantScope
-    from app.modules.engine.elicitation import elicit
     from app.db.session import get_db
+    from app.db.tenant import TenantScope
     from app.main import app
+    from app.modules.engine.elicitation import elicit
 
     project = await _create_project(client, tenant_a_token)
     session = await _create_session(client, tenant_a_token, project["id"])
@@ -208,10 +218,10 @@ async def test_elicit_workflow_progression(client: AsyncClient, tenant_a_token, 
 @pytest.mark.asyncio
 async def test_elicit_message_index_sequence(client: AsyncClient, tenant_a_token, seed_workflows):
     """Múltiplos ciclos mantêm message_index correto."""
-    from app.db.tenant import TenantScope
-    from app.modules.engine.elicitation import elicit
     from app.db.session import get_db
+    from app.db.tenant import TenantScope
     from app.main import app
+    from app.modules.engine.elicitation import elicit
 
     project = await _create_project(client, tenant_a_token)
     session = await _create_session(client, tenant_a_token, project["id"])

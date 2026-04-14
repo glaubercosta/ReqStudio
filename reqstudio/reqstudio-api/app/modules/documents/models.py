@@ -4,8 +4,7 @@ import uuid
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import ForeignKey, Integer, String, Text
-from sqlalchemy import JSON
+from sqlalchemy import JSON, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base, TenantMixin
@@ -18,7 +17,7 @@ ALLOWED_MIME_TYPES = {
     "application/pdf",
     "text/markdown",
     "text/x-markdown",
-    "text/plain",        # .md sem MIME explícito
+    "text/plain",  # .md sem MIME explícito
 }
 
 MAX_UPLOAD_BYTES = 20 * 1024 * 1024  # 20 MB
@@ -33,9 +32,7 @@ class Document(TenantMixin, Base):
 
     __tablename__ = "documents"
 
-    id: Mapped[str] = mapped_column(
-        String(36), primary_key=True, default=lambda: str(uuid.uuid4())
-    )
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     project_id: Mapped[str] = mapped_column(
         String(36), ForeignKey("projects.id", ondelete="CASCADE"), nullable=False
     )
@@ -68,9 +65,7 @@ class DocumentChunk(TenantMixin, Base):
 
     __tablename__ = "document_chunks"
 
-    id: Mapped[str] = mapped_column(
-        String(36), primary_key=True, default=lambda: str(uuid.uuid4())
-    )
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     document_id: Mapped[str] = mapped_column(
         String(36), ForeignKey("documents.id", ondelete="CASCADE"), nullable=False
     )

@@ -14,7 +14,7 @@ Invariante de resiliência (architecture.md §486-489):
 """
 
 import logging
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
 
 from sqlalchemy import func, select
 
@@ -22,11 +22,11 @@ from app.core.config import settings
 from app.core.exceptions import not_found_error
 from app.db.tenant import TenantScope
 from app.integrations.llm_client import CompletionChunk, stream_completion
-from app.modules.engine.context_builder import build_context
-from app.modules.sessions.models import Message, Session, SESSION_STATUS_COMPLETED
 from app.modules.auth.models import User
-from app.modules.workflows.models import WorkflowStep
+from app.modules.engine.context_builder import build_context
 from app.modules.projects.models import Project
+from app.modules.sessions.models import SESSION_STATUS_COMPLETED, Message, Session
+from app.modules.workflows.models import WorkflowStep
 
 logger = logging.getLogger(__name__)
 
@@ -80,9 +80,7 @@ async def elicit(
     resolved_user_name = _resolve_user_display_name(user_name)
     if not resolved_user_name:
         # Fallback defensivo para fluxos antigos que não repassam user_name no endpoint
-        user = await scope.db.scalar(
-            select(User).where(User.tenant_id == scope.tenant_id)
-        )
+        user = await scope.db.scalar(select(User).where(User.tenant_id == scope.tenant_id))
         if user:
             raw_display_name = getattr(user, "display_name", None)
             resolved_user_name = _resolve_user_display_name(raw_display_name or user.email)
@@ -155,11 +153,12 @@ async def elicit(
 
 async def _next_message_index(scope: TenantScope, session_id: str) -> int:
     """Calcula o próximo message_index para a sessão."""
-    count = await scope.db.scalar(
-        select(func.count())
-        .select_from(Message)
-        .where(Message.session_id == session_id)
-    ) or 0
+    count = (
+        await scope.db.scalar(
+            select(func.count()).select_from(Message).where(Message.session_id == session_id)
+        )
+        or 0
+    )
     return count
 
 
@@ -173,11 +172,14 @@ async def _advance_workflow(scope: TenantScope, session: Session) -> None:
     current_step = position.get("current_step", 1)
 
     # Verificar se existe próximo step
-    total_steps = await scope.db.scalar(
-        select(func.count())
-        .select_from(WorkflowStep)
-        .where(WorkflowStep.workflow_id == session.workflow_id)
-    ) or 0
+    total_steps = (
+        await scope.db.scalar(
+            select(func.count())
+            .select_from(WorkflowStep)
+            .where(WorkflowStep.workflow_id == session.workflow_id)
+        )
+        or 0
+    )
 
     if current_step < total_steps:
         position["current_step"] = current_step + 1
@@ -211,12 +213,12 @@ def _compute_progress_summary(workflow_position: dict | None) -> dict:
         step = 0
 
     return {
-        "context":      step >= 1,
+        "context": step >= 1,
         "stakeholders": step >= 2,
-        "goals":        step >= 3,
-        "flows":        step >= 4,
-        "nfr":          step >= 5,
-        "review":       False,  # Manual
+        "goals": step >= 3,
+        "flows": step >= 4,
+        "nfr": step >= 5,
+        "review": False,  # Manual
     }
 
 

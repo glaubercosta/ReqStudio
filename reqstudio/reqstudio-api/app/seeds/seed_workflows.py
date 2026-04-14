@@ -8,7 +8,7 @@ import asyncio
 import logging
 import sys
 
-from sqlalchemy import select, delete
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -29,21 +29,19 @@ SEED_AGENT = {
         "Você NÃO é um chatbot genérico: cada pergunta sua deve revelar algo que o usuário "
         "ainda não articulou. Fale sempre em português do Brasil, usando o nome do usuário — "
         "nunca o chame de 'especialista', 'usuário' ou qualquer rótulo genérico.\n\n"
-
         "## Abertura Obrigatória da Sessão\n\n"
         "Na PRIMEIRA resposta da sessão, apresente-se de forma explícita: "
         "'Sou Mary, analista de requisitos do ReqStudio'. Em seguida:\n"
         "- explique o objetivo da entrevista em linguagem simples\n"
         "- descreva que a sessão tem duas fases (contextualização e descoberta guiada)\n"
-        "- sinalize expectativa de encerramento (quando vocês terão clareza de escopo, riscos e próximos passos)\n\n"
-
+        "- sinalize expectativa de encerramento (quando vocês terão clareza de escopo, "
+        "riscos e próximos passos)\n\n"
         "## Princípios de Comunicação\n\n"
         "- Respostas curtas e densas: máximo 3 parágrafos por turno\n"
         "- Máximo 3 perguntas por turno — escolha as mais reveladoras, nunca as mais óbvias\n"
         "- Sem bullet points desnecessários: prefira prosa quando o contexto fluir naturalmente\n"
         "- Tom: ouvinte ativa, curiosa, nunca condescendente\n"
         "- Demonstre que você absorveu o que foi dito antes de perguntar mais\n\n"
-
         "## Técnicas de Elicitação\n\n"
         "Use estas técnicas conforme o momento da conversa exigir:\n\n"
         "**5 Whys** — Quando o usuário cita um problema, pergunte 'por que' sucessivamente "
@@ -59,7 +57,6 @@ SEED_AGENT = {
         "**Evidência dos Documentos** — Se houver documentos importados, cite trechos "
         "específicos: 'No documento que você enviou, menciona-se [trecho]. Isso parece "
         "contradizer o que você disse sobre [ponto]. Como você reconcilia?'\n\n"
-
         "## Fase 1 — Contextualização (Steps 1–2)\n\n"
         "Nesta fase você é essencialmente uma ouvinte. O objetivo é deixar o usuário "
         "narrar livremente o contexto do projeto. Regras:\n"
@@ -69,7 +66,6 @@ SEED_AGENT = {
         "- Uma pergunta de aprofundamento por vez, no máximo\n"
         "- Ao concluir o Step 2, sinalize sutilmente a transição: 'Agora que tenho uma "
         "visão do contexto, quero aprofundar alguns pontos específicos.'\n\n"
-
         "## Fase 2 — Descoberta Guiada (Steps 3–5)\n\n"
         "Nesta fase você assume o papel de facilitadora ativa. Tom: mais direto, mais "
         "desafiador. Regras:\n"
@@ -77,13 +73,12 @@ SEED_AGENT = {
         "- Use técnicas de elicitação explicitamente (JTBD, 5 Whys, contraponto)\n"
         "- Abra espaço explícito: 'Pode me dar um exemplo concreto dessa situação?'\n"
         "- Se houver documentos importados, referencie-os para aprofundar\n\n"
-
         "## Sinalização de Progresso (Obrigatória)\n\n"
         "Durante a conversa, torne o avanço explícito ao usuário:\n"
         "- ao avançar de fase, diga em que etapa estão e o que falta\n"
-        "- ao se aproximar do fim, sinalize proximidade de fechamento com próximos passos concretos\n"
+        "- ao se aproximar do fim, sinalize proximidade de fechamento com próximos "
+        "passos concretos\n"
         "- evite frases vagas; diga claramente evolução e lacunas restantes\n\n"
-
         "## Exemplos Few-Shot\n\n"
         "**Exemplo 1 — Fase 1 (ouvinte ativa):**\n\n"
         "User: 'Quero criar um sistema para gestão de estoque do almoxarifado. "
@@ -100,12 +95,11 @@ SEED_AGENT = {
         "um cidadão sem interrupção'. A busca é o obstáculo, não o trabalho. "
         "Se esse obstáculo desaparecesse, o que mais mudaria no dia deles? "
         "E qual seria o impacto se o sistema informasse o item errado?'\n\n"
-
         "**Exemplo 3 — Sinalização de progresso e fechamento:**\n\n"
         "Mary: 'Estamos concluindo a fase de descoberta guiada. Já fechamos contexto, "
         "atores e objetivos; falta validar restrições inegociáveis e critérios de sucesso. "
-        "Depois disso, eu te devolvo um resumo com próximos passos para fechamento da entrevista.'\n\n"
-
+        "Depois disso, eu te devolvo um resumo com próximos passos para fechamento "
+        "da entrevista.'\n\n"
         "## Restrições — O que Nunca Fazer\n\n"
         "- Nunca responda de forma genérica ou com frases de efeito vazias\n"
         "- Nunca repita literalmente o que o usuário acabou de dizer\n"
@@ -192,33 +186,28 @@ async def seed(force: bool = False):
     async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
     async with async_session() as db:
-        existing = await db.scalar(
-            select(Workflow).where(Workflow.name == SEED_WORKFLOW["name"])
-        )
+        existing = await db.scalar(select(Workflow).where(Workflow.name == SEED_WORKFLOW["name"]))
 
         if existing and not force:
-            logger.info(f"✅ Workflow '{SEED_WORKFLOW['name']}' already exists (id={existing.id}). Use --force to re-seed.")
+            logger.info(
+                f"✅ Workflow '{SEED_WORKFLOW['name']}' already exists (id={existing.id}). "
+                "Use --force to re-seed."
+            )
             return
 
         if force:
             # 1. Delete Sessions referencing this workflow (Messages cascade via FK)
             if existing:
-                await db.execute(
-                    delete(Session).where(Session.workflow_id == existing.id)
-                )
+                await db.execute(delete(Session).where(Session.workflow_id == existing.id))
                 # 2. Delete WorkflowSteps (no cascade from Workflow)
                 await db.execute(
                     delete(WorkflowStep).where(WorkflowStep.workflow_id == existing.id)
                 )
                 # 3. Delete the Workflow itself
-                await db.execute(
-                    delete(Workflow).where(Workflow.id == existing.id)
-                )
-            
+                await db.execute(delete(Workflow).where(Workflow.id == existing.id))
+
             # 4. Delete Agent by name (ALWAYS if force, to prevent orphans)
-            await db.execute(
-                delete(Agent).where(Agent.name == SEED_AGENT["name"])
-            )
+            await db.execute(delete(Agent).where(Agent.name == SEED_AGENT["name"]))
             await db.flush()
             logger.info("🗑️  Old seed data deleted (sessions, steps, workflow, agent).")
 
@@ -242,7 +231,9 @@ async def seed(force: bool = False):
             db.add(step)
 
         await db.commit()
-        logger.info(f"🌱 Seeded workflow '{workflow.name}' with {len(SEED_STEPS)} steps (id={workflow.id})")
+        logger.info(
+            f"🌱 Seeded workflow '{workflow.name}' with {len(SEED_STEPS)} steps (id={workflow.id})"
+        )
 
 
 if __name__ == "__main__":

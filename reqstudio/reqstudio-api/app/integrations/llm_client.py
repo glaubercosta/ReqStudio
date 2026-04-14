@@ -20,8 +20,8 @@ Configuração via settings:
 import logging
 import os
 import time
-from dataclasses import dataclass, field
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
+from dataclasses import dataclass
 
 import litellm
 
@@ -37,6 +37,7 @@ class CompletionMetrics:
 
     Popula OpenTelemetry spans para rastreabilidade.
     """
+
     model: str = ""
     input_tokens: int = 0
     output_tokens: int = 0
@@ -50,6 +51,7 @@ class CompletionMetrics:
 @dataclass
 class CompletionChunk:
     """Chunk individual de uma resposta streaming."""
+
     content: str = ""
     done: bool = False
     metrics: CompletionMetrics | None = None
@@ -60,7 +62,10 @@ def _llm_unavailable_error(detail: str = "") -> GuidedRecoveryError:
     return GuidedRecoveryError(
         code=ErrorCode.LLM_UNAVAILABLE,
         message="A IA está temporariamente indisponível.",
-        help=f"Todos os provedores de IA estão fora do ar. Sua sessão está segura. Tente novamente em alguns minutos.{' (' + detail + ')' if detail else ''}",
+        help=(
+            "Todos os provedores de IA estão fora do ar. Sua sessão está segura. "
+            f"Tente novamente em alguns minutos.{' (' + detail + ')' if detail else ''}"
+        ),
         actions=[{"label": "Tentar novamente", "action": "retry"}],
         severity=Severity.RECOVERABLE,
         status_code=503,
@@ -72,7 +77,10 @@ def _llm_timeout_error() -> GuidedRecoveryError:
     return GuidedRecoveryError(
         code=ErrorCode.LLM_UNAVAILABLE,
         message="A resposta da IA demorou demais.",
-        help=f"O tempo limite de {settings.LLM_TIMEOUT}s foi excedido. Tente novamente — às vezes a IA precisa de mais tempo para respostas complexas.",
+        help=(
+            f"O tempo limite de {settings.LLM_TIMEOUT}s foi excedido. "
+            "Tente novamente — às vezes a IA precisa de mais tempo para respostas complexas."
+        ),
         actions=[{"label": "Tentar novamente", "action": "retry"}],
         severity=Severity.RECOVERABLE,
         status_code=504,
@@ -179,26 +187,26 @@ async def stream_completion(
 
         yield CompletionChunk(content="", done=True, metrics=metrics)
 
-    except litellm.Timeout:
+    except litellm.Timeout as err:
         metrics.latency_ms = (time.monotonic() - start_time) * 1000
         metrics.success = False
         metrics.error = "timeout"
         logger.error("LLM timeout", extra={"model": target_model, "timeout": target_timeout})
-        raise _llm_timeout_error()
+        raise _llm_timeout_error() from err
 
     except (litellm.APIConnectionError, litellm.APIError, litellm.ServiceUnavailableError) as e:
         metrics.latency_ms = (time.monotonic() - start_time) * 1000
         metrics.success = False
         metrics.error = str(e)
         logger.error("LLM unavailable", extra={"model": target_model, "error": str(e)})
-        raise _llm_unavailable_error(str(e))
+        raise _llm_unavailable_error(str(e)) from e
 
     except Exception as e:
         metrics.latency_ms = (time.monotonic() - start_time) * 1000
         metrics.success = False
         metrics.error = str(e)
         logger.error("LLM unexpected error", extra={"model": target_model, "error": str(e)})
-        raise _llm_unavailable_error(str(e))
+        raise _llm_unavailable_error(str(e)) from e
 
 
 async def complete(

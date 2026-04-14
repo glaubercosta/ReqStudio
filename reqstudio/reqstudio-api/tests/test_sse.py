@@ -5,15 +5,15 @@ LLM é mocked. HTTP via AsyncClient + StreamingResponse.
 """
 
 import json
+from unittest.mock import patch
 
 import pytest
-from unittest.mock import patch
 from httpx import AsyncClient
 
 from app.integrations.llm_client import CompletionChunk, CompletionMetrics
 
-
 # ── Helpers ───────────────────────────────────────────────────────────────────
+
 
 def _auth(token: dict) -> dict:
     return {"Authorization": f"Bearer {token['access_token']}"}
@@ -41,10 +41,16 @@ async def _mock_llm_stream(*args, **kwargs):
     yield CompletionChunk(content="Olá ", done=False)
     yield CompletionChunk(content="mundo!", done=False)
     yield CompletionChunk(
-        content="", done=True,
+        content="",
+        done=True,
         metrics=CompletionMetrics(
-            model="mock", input_tokens=10, output_tokens=5,
-            total_tokens=15, cost_usd=0.001, latency_ms=100, success=True,
+            model="mock",
+            input_tokens=10,
+            output_tokens=5,
+            total_tokens=15,
+            cost_usd=0.001,
+            latency_ms=100,
+            success=True,
         ),
     )
 
@@ -123,7 +129,7 @@ async def test_elicit_sse_error_event(client: AsyncClient, tenant_a_token, seed_
     project = await _create_project(client, tenant_a_token)
     session = await _create_session(client, tenant_a_token, project["id"])
 
-    from app.core.exceptions import GuidedRecoveryError, ErrorCode, Severity
+    from app.core.exceptions import ErrorCode, GuidedRecoveryError, Severity
 
     async def _mock_error(*args, **kwargs):
         raise GuidedRecoveryError(
@@ -152,7 +158,10 @@ async def test_elicit_sse_error_event(client: AsyncClient, tenant_a_token, seed_
 
 @pytest.mark.asyncio
 async def test_elicit_sse_cross_tenant_returns_error(
-    client: AsyncClient, tenant_a_token, tenant_b_token, seed_workflows,
+    client: AsyncClient,
+    tenant_a_token,
+    tenant_b_token,
+    seed_workflows,
 ):
     """Sessão de outro tenant → event: error no SSE."""
     project_a = await _create_project(client, tenant_a_token)

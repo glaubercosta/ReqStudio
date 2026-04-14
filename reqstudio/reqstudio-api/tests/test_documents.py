@@ -5,17 +5,19 @@ Coverage target: ≥ 80% em app/modules/documents/.
 """
 
 import io
+
 import pytest
 from httpx import AsyncClient
 
-
 # ── Auth helper ───────────────────────────────────────────────────────────────
+
 
 def _auth(token: dict) -> dict:
     return {"Authorization": f"Bearer {token['access_token']}"}
 
 
 # ── Project helper ────────────────────────────────────────────────────────────
+
 
 async def _create_project(client: AsyncClient, token: dict, name: str = "Doc Project") -> str:
     resp = await client.post(
@@ -29,11 +31,13 @@ async def _create_project(client: AsyncClient, token: dict, name: str = "Doc Pro
 
 # ── File helper ───────────────────────────────────────────────────────────────
 
+
 def _md_file(content: str = "# Título\n\nConteúdo de teste.\n") -> list:
     return [("file", ("test.md", io.BytesIO(content.encode()), "text/markdown"))]
 
 
 # ── Story 4.1: Upload ─────────────────────────────────────────────────────────
+
 
 @pytest.mark.asyncio
 async def test_upload_markdown_returns_201(client: AsyncClient, tenant_a_token):
@@ -59,7 +63,9 @@ async def test_upload_markdown_returns_201(client: AsyncClient, tenant_a_token):
 async def test_upload_creates_multiple_chunks(client: AsyncClient, tenant_a_token):
     project_id = await _create_project(client, tenant_a_token)
     # Conteúdo longo o suficiente para gerar múltiplos chunks (>1500 chars por seção)
-    md_content = "# Seção 1\n\n" + ("Texto longo. " * 200) + "\n\n# Seção 2\n\n" + ("Mais texto. " * 200)
+    md_content = (
+        "# Seção 1\n\n" + ("Texto longo. " * 200) + "\n\n# Seção 2\n\n" + ("Mais texto. " * 200)
+    )
 
     resp = await client.post(
         f"/api/v1/projects/{project_id}/documents",
@@ -140,6 +146,7 @@ async def test_upload_requires_auth(client: AsyncClient, tenant_a_token):
 
 # ── Story 4.2: Listagem ───────────────────────────────────────────────────────
 
+
 @pytest.mark.asyncio
 async def test_list_empty_project(client: AsyncClient, tenant_a_token):
     project_id = await _create_project(client, tenant_a_token)
@@ -159,7 +166,7 @@ async def test_list_returns_uploaded_documents(client: AsyncClient, tenant_a_tok
     for i in range(2):
         await client.post(
             f"/api/v1/projects/{project_id}/documents",
-            files=_md_file(f"# Doc {i+1}\n\nConteúdo {i+1}.\n"),
+            files=_md_file(f"# Doc {i + 1}\n\nConteúdo {i + 1}.\n"),
             headers=_auth(tenant_a_token),
         )
 
@@ -174,9 +181,7 @@ async def test_list_returns_uploaded_documents(client: AsyncClient, tenant_a_tok
 
 
 @pytest.mark.asyncio
-async def test_list_cross_tenant_isolation(
-    client: AsyncClient, tenant_a_token, tenant_b_token
-):
+async def test_list_cross_tenant_isolation(client: AsyncClient, tenant_a_token, tenant_b_token):
     """Tenant B não pode listar documentos do projeto A."""
     project_a_id = await _create_project(client, tenant_a_token, name="Project A")
     await client.post(
@@ -193,6 +198,7 @@ async def test_list_cross_tenant_isolation(
 
 
 # ── Story 4.2: Remoção ────────────────────────────────────────────────────────
+
 
 @pytest.mark.asyncio
 async def test_delete_returns_204(client: AsyncClient, tenant_a_token):
@@ -246,9 +252,7 @@ async def test_delete_nonexistent_returns_404(client: AsyncClient, tenant_a_toke
 
 
 @pytest.mark.asyncio
-async def test_delete_cross_tenant_returns_404(
-    client: AsyncClient, tenant_a_token, tenant_b_token
-):
+async def test_delete_cross_tenant_returns_404(client: AsyncClient, tenant_a_token, tenant_b_token):
     """Tenant B não pode deletar documentos do Tenant A."""
     project_a_id = await _create_project(client, tenant_a_token, name="Project A Del")
 

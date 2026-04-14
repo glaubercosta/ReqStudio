@@ -9,10 +9,10 @@ Read-Before-Write: test_sessions.py (Lição 11).
 import pytest
 from httpx import AsyncClient
 
-from app.modules.engine.token_counter import estimate_tokens, estimate_messages_tokens
-
+from app.modules.engine.token_counter import estimate_messages_tokens, estimate_tokens
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
+
 
 def _auth(token: dict) -> dict:
     return {"Authorization": f"Bearer {token['access_token']}"}
@@ -85,8 +85,6 @@ async def test_build_context_basic(client: AsyncClient, tenant_a_token, seed_wor
     await _send_message(client, tenant_a_token, session["id"], "Quero criar um app de saúde")
 
     # Precisamos de um TenantScope real para o context_builder
-    from tests.conftest import SEED_WORKFLOW_ID
-    from sqlalchemy.ext.asyncio import AsyncSession
     from app.db.session import get_db
     from app.main import app
 
@@ -108,10 +106,10 @@ async def test_build_context_basic(client: AsyncClient, tenant_a_token, seed_wor
 @pytest.mark.asyncio
 async def test_build_context_priority_order(client: AsyncClient, tenant_a_token, seed_workflows):
     """Verifica que system prompt vem antes das mensagens."""
-    from app.db.tenant import TenantScope
-    from app.modules.engine.context_builder import build_context
     from app.db.session import get_db
+    from app.db.tenant import TenantScope
     from app.main import app
+    from app.modules.engine.context_builder import build_context
 
     project = await _create_project(client, tenant_a_token)
     session = await _create_session(client, tenant_a_token, project["id"])
@@ -134,10 +132,10 @@ async def test_build_context_priority_order(client: AsyncClient, tenant_a_token,
 @pytest.mark.asyncio
 async def test_build_context_truncation(client: AsyncClient, tenant_a_token, seed_workflows):
     """Com limite baixo de tokens, mensagens antigas são truncadas primeiro."""
-    from app.db.tenant import TenantScope
-    from app.modules.engine.context_builder import build_context
     from app.db.session import get_db
+    from app.db.tenant import TenantScope
     from app.main import app
+    from app.modules.engine.context_builder import build_context
 
     project = await _create_project(client, tenant_a_token)
     session = await _create_session(client, tenant_a_token, project["id"])
@@ -162,12 +160,14 @@ async def test_build_context_truncation(client: AsyncClient, tenant_a_token, see
 
 
 @pytest.mark.asyncio
-async def test_build_context_no_truncation_when_fits(client: AsyncClient, tenant_a_token, seed_workflows):
+async def test_build_context_no_truncation_when_fits(
+    client: AsyncClient, tenant_a_token, seed_workflows
+):
     """Com limite alto, nenhuma mensagem é truncada."""
-    from app.db.tenant import TenantScope
-    from app.modules.engine.context_builder import build_context
     from app.db.session import get_db
+    from app.db.tenant import TenantScope
     from app.main import app
+    from app.modules.engine.context_builder import build_context
 
     project = await _create_project(client, tenant_a_token)
     session = await _create_session(client, tenant_a_token, project["id"])
@@ -183,11 +183,11 @@ async def test_build_context_no_truncation_when_fits(client: AsyncClient, tenant
 @pytest.mark.asyncio
 async def test_build_context_session_not_found(client: AsyncClient, tenant_a_token, seed_workflows):
     """Sessão inexistente retorna 404."""
-    from app.db.tenant import TenantScope
-    from app.modules.engine.context_builder import build_context
     from app.core.exceptions import GuidedRecoveryError
     from app.db.session import get_db
+    from app.db.tenant import TenantScope
     from app.main import app
+    from app.modules.engine.context_builder import build_context
 
     async for db in app.dependency_overrides[get_db]():
         scope = TenantScope(db=db, tenant_id=tenant_a_token["tenant_id"])
@@ -198,14 +198,17 @@ async def test_build_context_session_not_found(client: AsyncClient, tenant_a_tok
 
 @pytest.mark.asyncio
 async def test_build_context_cross_tenant_isolation(
-    client: AsyncClient, tenant_a_token, tenant_b_token, seed_workflows,
+    client: AsyncClient,
+    tenant_a_token,
+    tenant_b_token,
+    seed_workflows,
 ):
     """Sessão de outro tenant não é acessível."""
-    from app.db.tenant import TenantScope
-    from app.modules.engine.context_builder import build_context
     from app.core.exceptions import GuidedRecoveryError
     from app.db.session import get_db
+    from app.db.tenant import TenantScope
     from app.main import app
+    from app.modules.engine.context_builder import build_context
 
     project_a = await _create_project(client, tenant_a_token)
     session_a = await _create_session(client, tenant_a_token, project_a["id"])
@@ -220,8 +223,8 @@ async def test_build_context_cross_tenant_isolation(
 @pytest.mark.asyncio
 async def test_build_context_isolation_validation():
     """Validação direta: chunks de outro tenant disparam erro CRITICAL."""
-    from app.modules.engine.context_builder import _validate_isolation
     from app.core.exceptions import GuidedRecoveryError
+    from app.modules.engine.context_builder import _validate_isolation
 
     chunks_ok = [{"tenant_id": "t1", "project_id": "p1", "content": "ok"}]
     _validate_isolation("t1", "p1", chunks_ok, [])  # Não deve lançar
@@ -243,8 +246,8 @@ async def test_build_context_isolation_validation():
 @pytest.mark.asyncio
 async def test_build_context_message_isolation_validation():
     """Mensagem de outro tenant dispara erro CRITICAL."""
-    from app.modules.engine.context_builder import _validate_isolation
     from app.core.exceptions import GuidedRecoveryError
+    from app.modules.engine.context_builder import _validate_isolation
 
     msgs_bad = [{"role": "user", "content": "msg", "tenant_id": "t2", "session_id": "s1"}]
     with pytest.raises(GuidedRecoveryError):
@@ -254,10 +257,10 @@ async def test_build_context_message_isolation_validation():
 @pytest.mark.asyncio
 async def test_build_context_empty_session(client: AsyncClient, tenant_a_token, seed_workflows):
     """Sessão sem mensagens retorna apenas system prompt."""
-    from app.db.tenant import TenantScope
-    from app.modules.engine.context_builder import build_context
     from app.db.session import get_db
+    from app.db.tenant import TenantScope
     from app.main import app
+    from app.modules.engine.context_builder import build_context
 
     project = await _create_project(client, tenant_a_token)
     session = await _create_session(client, tenant_a_token, project["id"])

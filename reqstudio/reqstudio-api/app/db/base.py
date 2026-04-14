@@ -4,6 +4,7 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 class Base(DeclarativeBase):
     """Base class for all SQLAlchemy models."""
+
     pass
 
 
@@ -19,6 +20,7 @@ class TenantMixin:
         nullable=False,
         index=True,
     )
+
 
 # NOTE: models are NOT imported here to avoid circular imports.
 # Import them explicitly wherever metadata discovery is needed:

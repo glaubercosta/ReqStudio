@@ -11,14 +11,18 @@ from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from app.db.base import Base
-from app.modules.auth.models import RefreshToken, Tenant, User  # noqa: F401 — registers models in Base.metadata
-from app.modules.documents.models import Document, DocumentChunk  # noqa: F401
-from app.modules.projects.models import Project  # noqa: F401
-from app.modules.sessions.models import Session, Message  # noqa: F401
-from app.modules.workflows.models import Workflow, WorkflowStep, Agent  # noqa: F401
-from app.modules.artifacts.models import Artifact, ArtifactVersion  # noqa: F401
 from app.db.session import get_db
 from app.main import app
+from app.modules.artifacts.models import Artifact, ArtifactVersion  # noqa: F401
+from app.modules.auth.models import (  # noqa: F401 — registers models in Base.metadata
+    RefreshToken,
+    Tenant,
+    User,
+)
+from app.modules.documents.models import Document, DocumentChunk  # noqa: F401
+from app.modules.projects.models import Project  # noqa: F401
+from app.modules.sessions.models import Message, Session  # noqa: F401
+from app.modules.workflows.models import Agent, Workflow, WorkflowStep  # noqa: F401
 
 # Fixed UUIDs for deterministic multi-tenant tests
 TENANT_A_ID = "550e8400-e29b-41d4-a716-446655440001"
@@ -140,4 +144,3 @@ async def seed_workflows(db_session: AsyncSession) -> str:
     db_session.add(step)
     await db_session.commit()
     return SEED_WORKFLOW_ID
-

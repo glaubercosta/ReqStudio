@@ -10,8 +10,8 @@ Referência: test_projects.py (Read-Before-Write, Lição 11).
 import pytest
 from httpx import AsyncClient
 
-
 # ── Helpers ───────────────────────────────────────────────────────────────────
+
 
 def _auth(token: dict) -> dict:
     return {"Authorization": f"Bearer {token['access_token']}"}
@@ -59,7 +59,10 @@ async def test_create_session_returns_201(client: AsyncClient, tenant_a_token, s
 
 @pytest.mark.asyncio
 async def test_create_session_with_project_of_another_tenant_returns_404(
-    client: AsyncClient, tenant_a_token, tenant_b_token, seed_workflows,
+    client: AsyncClient,
+    tenant_a_token,
+    tenant_b_token,
+    seed_workflows,
 ):
     project_a = await _create_project(client, tenant_a_token)
     res = await client.post(
@@ -72,7 +75,9 @@ async def test_create_session_with_project_of_another_tenant_returns_404(
 
 @pytest.mark.asyncio
 async def test_create_session_with_nonexistent_project_returns_404(
-    client: AsyncClient, tenant_a_token, seed_workflows,
+    client: AsyncClient,
+    tenant_a_token,
+    seed_workflows,
 ):
     res = await client.post(
         "/api/v1/projects/inexistente-id/sessions",
@@ -87,7 +92,10 @@ async def test_create_session_with_nonexistent_project_returns_404(
 
 @pytest.mark.asyncio
 async def test_list_sessions_returns_only_tenant_sessions(
-    client: AsyncClient, tenant_a_token, tenant_b_token, seed_workflows,
+    client: AsyncClient,
+    tenant_a_token,
+    tenant_b_token,
+    seed_workflows,
 ):
     project_a = await _create_project(client, tenant_a_token)
     await _create_session(client, tenant_a_token, project_a["id"])
@@ -132,7 +140,10 @@ async def test_get_session_returns_200(client: AsyncClient, tenant_a_token, seed
 
 @pytest.mark.asyncio
 async def test_get_session_of_another_tenant_returns_404(
-    client: AsyncClient, tenant_a_token, tenant_b_token, seed_workflows,
+    client: AsyncClient,
+    tenant_a_token,
+    tenant_b_token,
+    seed_workflows,
 ):
     project_a = await _create_project(client, tenant_a_token)
     session_a = await _create_session(client, tenant_a_token, project_a["id"])
@@ -178,7 +189,10 @@ async def test_add_message_returns_201(client: AsyncClient, tenant_a_token, seed
 
 @pytest.mark.asyncio
 async def test_add_message_to_session_of_another_tenant_returns_404(
-    client: AsyncClient, tenant_a_token, tenant_b_token, seed_workflows,
+    client: AsyncClient,
+    tenant_a_token,
+    tenant_b_token,
+    seed_workflows,
 ):
     project_a = await _create_project(client, tenant_a_token)
     session_a = await _create_session(client, tenant_a_token, project_a["id"])
@@ -226,7 +240,10 @@ async def test_list_messages_paginated(client: AsyncClient, tenant_a_token, seed
 
 @pytest.mark.asyncio
 async def test_list_messages_of_session_from_another_tenant_returns_404(
-    client: AsyncClient, tenant_a_token, tenant_b_token, seed_workflows,
+    client: AsyncClient,
+    tenant_a_token,
+    tenant_b_token,
+    seed_workflows,
 ):
     project_a = await _create_project(client, tenant_a_token)
     session_a = await _create_session(client, tenant_a_token, project_a["id"])
@@ -242,14 +259,18 @@ async def test_list_messages_of_session_from_another_tenant_returns_404(
 
 
 @pytest.mark.asyncio
-async def test_session_created_with_default_workflow(client: AsyncClient, tenant_a_token, seed_workflows):
+async def test_session_created_with_default_workflow(
+    client: AsyncClient, tenant_a_token, seed_workflows
+):
     project = await _create_project(client, tenant_a_token)
     session = await _create_session(client, tenant_a_token, project["id"])
     assert session["workflow_id"] == seed_workflows
 
 
 @pytest.mark.asyncio
-async def test_session_get_includes_message_count(client: AsyncClient, tenant_a_token, seed_workflows):
+async def test_session_get_includes_message_count(
+    client: AsyncClient, tenant_a_token, seed_workflows
+):
     project = await _create_project(client, tenant_a_token)
     session = await _create_session(client, tenant_a_token, project["id"])
     await _send_message(client, tenant_a_token, session["id"], "Msg 1")

@@ -12,8 +12,8 @@ from app.core.exceptions import (
     validation_error,
 )
 
-
 # --- Unit tests: GuidedRecoveryError ---
+
 
 def test_guided_recovery_error_to_dict():
     """AC#3: GuidedRecoveryError serializa corretamente."""
@@ -53,6 +53,7 @@ def test_factory_functions_produce_valid_errors():
 
 
 # --- Integration tests: error handlers via HTTP ---
+
 
 @pytest.mark.asyncio
 async def test_404_returns_guided_recovery(client: AsyncClient):

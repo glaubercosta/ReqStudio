@@ -9,27 +9,24 @@ Invariants (Lição 9 do projeto):
 from __future__ import annotations
 
 import magic  # type: ignore[import-not-found]
-
 from sqlalchemy import func, select
-from sqlalchemy.orm import selectinload
 
-from app.core.exceptions import not_found_error
+from app.core.exceptions import ErrorCode, GuidedRecoveryError, Severity, not_found_error
 from app.db.tenant import TenantScope
 from app.modules.documents.models import (
     ALLOWED_MIME_TYPES,
-    MAX_UPLOAD_BYTES,
     DOCUMENT_STATUS_ERROR,
     DOCUMENT_STATUS_READY,
+    MAX_UPLOAD_BYTES,
     Document,
     DocumentChunk,
 )
 from app.modules.documents.parsers import parse_markdown, parse_pdf
 from app.modules.documents.schemas import DocumentListResponse, DocumentResponse
 from app.modules.projects.models import Project
-from app.core.exceptions import GuidedRecoveryError, ErrorCode, Severity
-
 
 # ── Custom Errors ─────────────────────────────────────────────────────────────
+
 
 def _upload_too_large_error(size_mb: int) -> GuidedRecoveryError:
     return GuidedRecoveryError(
@@ -54,6 +51,7 @@ def _unsupported_mime_error(mime: str) -> GuidedRecoveryError:
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
+
 
 def _detect_mime(content: bytes, filename: str) -> str:
     """Detecta MIME real do conteúdo (não pela extensão)."""
@@ -85,6 +83,7 @@ def _to_response(doc: Document, chunk_count: int) -> DocumentResponse:
 
 
 # ── Service ───────────────────────────────────────────────────────────────────
+
 
 async def upload_document(
     scope: TenantScope,
@@ -124,14 +123,16 @@ async def upload_document(
     try:
         raw_chunks = _parse(content, mime_type)
         for idx, chunk_text in enumerate(raw_chunks):
-            scope.db.add(DocumentChunk(
-                document_id=doc.id,
-                project_id=project_id,
-                tenant_id=scope.tenant_id,
-                chunk_index=idx,
-                content=chunk_text,
-                chunk_metadata={"source": filename, "chunk_index": idx},
-            ))
+            scope.db.add(
+                DocumentChunk(
+                    document_id=doc.id,
+                    project_id=project_id,
+                    tenant_id=scope.tenant_id,
+                    chunk_index=idx,
+                    content=chunk_text,
+                    chunk_metadata={"source": filename, "chunk_index": idx},
+                )
+            )
         doc.status = DOCUMENT_STATUS_READY
         chunk_count = len(raw_chunks)
     except Exception:
@@ -164,8 +165,7 @@ async def list_documents(
             .group_by(DocumentChunk.document_id)
         )
         chunk_counts: dict[str, int] = {
-            row.document_id: row.cnt
-            for row in await scope.db.execute(count_stmt)
+            row.document_id: row.cnt for row in await scope.db.execute(count_stmt)
         }
     else:
         chunk_counts = {}

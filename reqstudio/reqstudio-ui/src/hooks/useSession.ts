@@ -47,7 +47,7 @@ export function useSession({ sessionId }: UseSessionOptions) {
   const [sessionTimedOut, setSessionTimedOut] = useState(false)
   const [sessionEndCode, setSessionEndCode] = useState<string | null>(null)
   const abortRef = useRef<AbortController | null>(null)
-  const lastActivityAtRef = useRef<number>(Date.now())
+  const lastActivityAtRef = useRef<number>(0)
   const inactivityTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // ── Session data ──

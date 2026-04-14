@@ -7,12 +7,12 @@ from pydantic import BaseModel, Field
 
 from app.modules.sessions.models import VALID_MESSAGE_ROLES, VALID_SESSION_STATUSES
 
-
 # ── Session Schemas ───────────────────────────────────────────────────────────
 
 
 class SessionCreateBody(BaseModel):
     """Body do POST — project_id vem da URL, não do body."""
+
     workflow_id: str | None = Field(None, description="ID do workflow (default: briefing)")
 
 

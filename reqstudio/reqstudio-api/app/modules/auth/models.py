@@ -4,7 +4,7 @@ RefreshToken adicionado na Story 2.3 (rotation + reuse detection).
 """
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import DateTime, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -18,7 +18,7 @@ def _uuid() -> str:
 
 def _now() -> datetime:
     """UTC now como naive datetime (compatível com SQLite em testes)."""
-    return datetime.now(timezone.utc).replace(tzinfo=None)
+    return datetime.now(UTC).replace(tzinfo=None)
 
 
 class Tenant(Base):
@@ -90,12 +90,8 @@ class RefreshToken(Base):
     def is_valid(self) -> bool:
         """True se token não foi usado, não foi revogado e não expirou."""
         # Usa naive UTC para compatibilidade com SQLite (testes) e PostgreSQL (produção)
-        now = datetime.now(timezone.utc).replace(tzinfo=None)
+        now = datetime.now(UTC).replace(tzinfo=None)
         expires = self.expires_at
         if expires.tzinfo is not None:
             expires = expires.replace(tzinfo=None)
-        return (
-            self.used_at is None
-            and self.revoked_at is None
-            and expires > now
-        )
+        return self.used_at is None and self.revoked_at is None and expires > now

@@ -5,19 +5,17 @@ and ``sys.exit`` so no real database is needed.
 """
 
 import importlib
-import sys
-from unittest.mock import MagicMock, call, patch
-
-import pytest
-
+from unittest.mock import MagicMock, patch
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _reload_module():
     """Force-reload migrations module to clear any cached settings state."""
     import app.db.migrations as mod
+
     importlib.reload(mod)
     return mod
 
@@ -46,8 +44,10 @@ class TestRunMigrationsOnStartup:
         mod = _reload_module()
         monkeypatch.setattr(mod.settings, "TESTING", False)
 
-        with patch.object(mod.command, "upgrade") as mock_upgrade, \
-             patch.object(mod, "_get_alembic_config", return_value=MagicMock()):
+        with (
+            patch.object(mod.command, "upgrade") as mock_upgrade,
+            patch.object(mod, "_get_alembic_config", return_value=MagicMock()),
+        ):
             mod.run_migrations_on_startup()
 
         mock_upgrade.assert_called_once()
@@ -59,9 +59,11 @@ class TestRunMigrationsOnStartup:
         mod = _reload_module()
         monkeypatch.setattr(mod.settings, "TESTING", False)
 
-        with patch.object(mod, "_get_alembic_config", return_value=MagicMock()), \
-             patch.object(mod.command, "upgrade", side_effect=Exception("DB down")), \
-             patch.object(mod.sys, "exit") as mock_exit:
+        with (
+            patch.object(mod, "_get_alembic_config", return_value=MagicMock()),
+            patch.object(mod.command, "upgrade", side_effect=Exception("DB down")),
+            patch.object(mod.sys, "exit") as mock_exit,
+        ):
             mod.run_migrations_on_startup()
 
         mock_exit.assert_called_once_with(1)
@@ -71,9 +73,11 @@ class TestRunMigrationsOnStartup:
         mod = _reload_module()
         monkeypatch.setattr(mod.settings, "TESTING", False)
 
-        with patch.object(mod, "_get_alembic_config", return_value=MagicMock()), \
-             patch.object(mod.command, "upgrade"), \
-             patch.object(mod.sys, "exit") as mock_exit:
+        with (
+            patch.object(mod, "_get_alembic_config", return_value=MagicMock()),
+            patch.object(mod.command, "upgrade"),
+            patch.object(mod.sys, "exit") as mock_exit,
+        ):
             mod.run_migrations_on_startup()
 
         mock_exit.assert_not_called()
@@ -88,8 +92,10 @@ class TestRunMigrationsOnStartup:
         def fake_upgrade(cfg, revision):
             captured["revision"] = revision
 
-        with patch.object(mod, "_get_alembic_config", return_value=MagicMock()), \
-             patch.object(mod.command, "upgrade", side_effect=fake_upgrade):
+        with (
+            patch.object(mod, "_get_alembic_config", return_value=MagicMock()),
+            patch.object(mod.command, "upgrade", side_effect=fake_upgrade),
+        ):
             mod.run_migrations_on_startup()
 
         assert captured.get("revision") == "head"
@@ -101,9 +107,11 @@ class TestRunMigrationsOnStartup:
         mod = _reload_module()
         monkeypatch.setattr(mod.settings, "TESTING", True)
 
-        with patch.object(mod.command, "upgrade"):
-            with caplog.at_level(logging.INFO, logger="app.db.migrations"):
-                mod.run_migrations_on_startup()
+        with (
+            patch.object(mod.command, "upgrade"),
+            caplog.at_level(logging.INFO, logger="app.db.migrations"),
+        ):
+            mod.run_migrations_on_startup()
 
         assert any("test environment" in record.message.lower() for record in caplog.records)
 
@@ -114,10 +122,12 @@ class TestRunMigrationsOnStartup:
         mod = _reload_module()
         monkeypatch.setattr(mod.settings, "TESTING", False)
 
-        with patch.object(mod, "_get_alembic_config", return_value=MagicMock()), \
-             patch.object(mod.command, "upgrade", side_effect=Exception("forced error")), \
-             patch.object(mod.sys, "exit"):
-            with caplog.at_level(logging.CRITICAL, logger="app.db.migrations"):
-                mod.run_migrations_on_startup()
+        with (
+            patch.object(mod, "_get_alembic_config", return_value=MagicMock()),
+            patch.object(mod.command, "upgrade", side_effect=Exception("forced error")),
+            patch.object(mod.sys, "exit"),
+            caplog.at_level(logging.CRITICAL, logger="app.db.migrations"),
+        ):
+            mod.run_migrations_on_startup()
 
         assert any(record.levelname == "CRITICAL" for record in caplog.records)

@@ -52,9 +52,9 @@ class ErrorCode(StrEnum):
 class Severity(StrEnum):
     """Severidade do erro para o frontend renderizar o feedback adequado."""
 
-    RECOVERABLE = "recoverable"   # Usuário pode tentar de novo
-    WARNING = "warning"           # Atenção mas não bloqueia
-    CRITICAL = "critical"         # Requer intervenção (ex: re-login)
+    RECOVERABLE = "recoverable"  # Usuário pode tentar de novo
+    WARNING = "warning"  # Atenção mas não bloqueia
+    CRITICAL = "critical"  # Requer intervenção (ex: re-login)
 
 
 class GuidedRecoveryError(Exception):
@@ -108,11 +108,15 @@ class GuidedRecoveryError(Exception):
 # Erros pré-definidos (use como factory para consistência)
 # ---------------------------------------------------------------------------
 
+
 def session_expired_error() -> GuidedRecoveryError:
     return GuidedRecoveryError(
         code=ErrorCode.SESSION_EXPIRED,
         message="Sua sessão de trabalho expirou por inatividade.",
-        help="Sessões são preservadas automaticamente. Volte à lista de projetos para retomar de onde parou.",
+        help=(
+            "Sessões são preservadas automaticamente. "
+            "Volte à lista de projetos para retomar de onde parou."
+        ),
         actions=[
             {"label": "Voltar aos projetos", "route": "/projects"},
             {"label": "Tentar novamente", "action": "retry"},
@@ -123,10 +127,14 @@ def session_expired_error() -> GuidedRecoveryError:
 
 
 def internal_error(detail: str = "") -> GuidedRecoveryError:
+    detail_suffix = f" ({detail})" if detail else ""
     return GuidedRecoveryError(
         code=ErrorCode.INTERNAL_ERROR,
         message="Ocorreu um erro inesperado.",
-        help=f"Instabilidade temporária. Sua sessão está segura. Tente novamente em alguns segundos.{' (' + detail + ')' if detail else ''}",
+        help=(
+            "Instabilidade temporária. Sua sessão está segura. "
+            f"Tente novamente em alguns segundos.{detail_suffix}"
+        ),
         actions=[
             {"label": "Tentar novamente", "action": "retry"},
         ],
@@ -178,10 +186,14 @@ def context_isolation_error(detail: str = "") -> GuidedRecoveryError:
     Este erro NUNCA deveria alcançar o usuário em condições normais.
     Sua existência indica um bug de isolamento no pipeline.
     """
+    detail_suffix = f" ({detail})" if detail else ""
     return GuidedRecoveryError(
         code=ErrorCode.CONTEXT_ISOLATION_VIOLATION,
         message="Erro de segurança interna detectado.",
-        help=f"O sistema detectou uma inconsistência no isolamento de dados. Sua sessão está segura. Tente novamente.{' (' + detail + ')' if detail else ''}",
+        help=(
+            "O sistema detectou uma inconsistência no isolamento de dados. "
+            f"Sua sessão está segura. Tente novamente.{detail_suffix}"
+        ),
         actions=[{"label": "Tentar novamente", "action": "retry"}],
         severity=Severity.CRITICAL,
         status_code=500,

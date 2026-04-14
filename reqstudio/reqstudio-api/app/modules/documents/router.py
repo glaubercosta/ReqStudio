@@ -8,7 +8,6 @@ Endpoints:
 
 from fastapi import APIRouter, Depends, File, UploadFile, status
 
-from app.core.exceptions import GuidedRecoveryError
 from app.db.tenant import TenantScope, get_tenant_scope
 from app.modules.documents import service
 from app.modules.documents.schemas import DocumentListResponse, DocumentResponse

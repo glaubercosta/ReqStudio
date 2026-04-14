@@ -7,8 +7,8 @@ workflow_position e artifact_state persistidos entre pause/resume.
 import pytest
 from httpx import AsyncClient
 
-
 # ── Helpers ───────────────────────────────────────────────────────────────────
+
 
 def _auth(token: dict) -> dict:
     return {"Authorization": f"Bearer {token['access_token']}"}
@@ -75,7 +75,9 @@ async def test_resume_session(client: AsyncClient, tenant_a_token, seed_workflow
 
 @pytest.mark.asyncio
 async def test_paused_session_preserves_messages(
-    client: AsyncClient, tenant_a_token, seed_workflows,
+    client: AsyncClient,
+    tenant_a_token,
+    seed_workflows,
 ):
     """Mensagens persistem após pause/resume."""
     project = await _create_project(client, tenant_a_token)
@@ -115,16 +117,20 @@ async def test_paused_session_preserves_messages(
 
 @pytest.mark.asyncio
 async def test_paused_session_preserves_workflow_position(
-    client: AsyncClient, tenant_a_token, seed_workflows,
+    client: AsyncClient,
+    tenant_a_token,
+    seed_workflows,
 ):
     """workflow_position persiste entre pause/resume."""
     from unittest.mock import patch
+
     from app.integrations.llm_client import CompletionChunk, CompletionMetrics
 
     async def _mock_llm(*args, **kwargs):
         yield CompletionChunk(content="Resposta", done=False)
         yield CompletionChunk(
-            content="", done=True,
+            content="",
+            done=True,
             metrics=CompletionMetrics(model="mock", success=True),
         )
 
@@ -172,7 +178,10 @@ async def test_paused_session_preserves_workflow_position(
 
 @pytest.mark.asyncio
 async def test_cross_tenant_cannot_pause(
-    client: AsyncClient, tenant_a_token, tenant_b_token, seed_workflows,
+    client: AsyncClient,
+    tenant_a_token,
+    tenant_b_token,
+    seed_workflows,
 ):
     """Outro tenant não consegue pausar sessão alheia."""
     project = await _create_project(client, tenant_a_token)

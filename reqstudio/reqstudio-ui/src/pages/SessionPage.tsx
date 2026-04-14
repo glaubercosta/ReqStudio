@@ -9,9 +9,11 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { UIEvent } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import { useSession } from '@/hooks/useSession'
 import { useProject } from '@/hooks/useProject'
-import { artifactsApi, type Artifact } from '@/services/artifactsApi'
+import { artifactsApi, type Artifact, type ArtifactExportFormat, type ArtifactView } from '@/services/artifactsApi'
 import { ChatMessage } from '@/components/chat/ChatMessage'
 import { ChatInput } from '@/components/chat/ChatInput'
 import { TypingIndicator } from '@/components/chat/TypingIndicator'
@@ -19,6 +21,7 @@ import { SessionTelemetryWidget } from '@/components/chat/SessionTelemetryWidget
 import type { Message } from '@/services/sessionsApi'
 
 type Tab = 'chat' | 'artifact'
+type DesktopLayoutMode = 'chat' | 'split' | 'artifact'
 const ELICITATION_STEPS = [
   'Contexto',
   'Usuários e stakeholders',
@@ -318,6 +321,11 @@ interface SessionArtifactPanelProps {
   previewMarkdown: string
   isLoadingPreview: boolean
   artifactId: string | null
+  activeView: ArtifactView
+  isExporting: ArtifactExportFormat | null
+  exportError: string | null
+  onChangeView: (view: ArtifactView) => void
+  onExport: (format: ArtifactExportFormat) => void
   onOpenArtifact: (artifactId: string) => void
 }
 
@@ -325,6 +333,11 @@ function SessionArtifactPanel({
   previewMarkdown,
   isLoadingPreview,
   artifactId,
+  activeView,
+  isExporting,
+  exportError,
+  onChangeView,
+  onExport,
   onOpenArtifact,
 }: SessionArtifactPanelProps) {
   return (
@@ -336,21 +349,62 @@ function SessionArtifactPanel({
         <h2 className="text-h3 font-semibold" style={{ color: 'var(--rs-text-primary)' }}>
           Artefato
         </h2>
-        {artifactId ? (
+        <div className="flex items-center gap-2">
           <button
             type="button"
-            id="btn-open-artifact-from-session"
             className="text-caption px-2 py-1 rounded-md border border-border hover:bg-muted transition-colors"
-            onClick={() => onOpenArtifact(artifactId)}
+            style={activeView === 'business' ? { background: 'var(--rs-primary-light)', color: 'var(--rs-primary)' } : undefined}
+            onClick={() => onChangeView('business')}
           >
-            Abrir artefato
+            Negócio
           </button>
-        ) : null}
+          <button
+            type="button"
+            className="text-caption px-2 py-1 rounded-md border border-border hover:bg-muted transition-colors"
+            style={activeView === 'technical' ? { background: 'var(--rs-primary-light)', color: 'var(--rs-primary)' } : undefined}
+            onClick={() => onChangeView('technical')}
+          >
+            Técnico
+          </button>
+          {artifactId ? (
+            <button
+              type="button"
+              id="btn-open-artifact-from-session"
+              className="text-caption px-2 py-1 rounded-md border border-border hover:bg-muted transition-colors"
+              onClick={() => onOpenArtifact(artifactId)}
+            >
+              Abrir artefato
+            </button>
+          ) : null}
+        </div>
       </div>
       <div
         className="flex-1 overflow-y-auto px-4 py-4"
         style={{ background: 'var(--background)' }}
       >
+        <div className="mb-3 flex items-center gap-2">
+          <button
+            type="button"
+            className="text-caption px-2 py-1 rounded-md border border-border hover:bg-muted transition-colors"
+            onClick={() => onExport('markdown')}
+            disabled={isExporting !== null || !artifactId}
+          >
+            {isExporting === 'markdown' ? 'Exportando...' : 'Exportar MD'}
+          </button>
+          <button
+            type="button"
+            className="text-caption px-2 py-1 rounded-md border border-border hover:bg-muted transition-colors"
+            onClick={() => onExport('json')}
+            disabled={isExporting !== null || !artifactId}
+          >
+            {isExporting === 'json' ? 'Exportando...' : 'Exportar JSON'}
+          </button>
+        </div>
+        {exportError ? (
+          <p className="mb-3 text-caption" style={{ color: 'var(--rs-error)' }} role="alert">
+            {exportError}
+          </p>
+        ) : null}
         {isLoadingPreview ? (
           <div className="flex justify-center py-8">
             <div
@@ -359,16 +413,14 @@ function SessionArtifactPanel({
             />
           </div>
         ) : previewMarkdown ? (
-          <pre
-            className="text-mono whitespace-pre-wrap"
-            style={{
-              color: 'var(--rs-text-primary)',
-              fontSize: 'var(--text-mono)',
-              lineHeight: 'var(--leading-mono)',
-            }}
+          <div
+            className="prose prose-sm max-w-none"
+            style={{ color: 'var(--rs-text-primary)' }}
           >
-            {previewMarkdown}
-          </pre>
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+              {previewMarkdown}
+            </ReactMarkdown>
+          </div>
         ) : (
           <div className="flex flex-col items-center justify-center py-16 text-center" style={{ color: 'var(--rs-text-muted)' }}>
             <div className="text-4xl mb-4">📋</div>
@@ -389,10 +441,14 @@ export default function SessionPage() {
   const { id: sessionId } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState<Tab>('chat')
+  const [desktopLayout, setDesktopLayout] = useState<DesktopLayoutMode>('split')
   const [artifactUpdated, setArtifactUpdated] = useState(false)
   const [linkedArtifactId, setLinkedArtifactId] = useState<string | null>(null)
-  const [businessPreview, setBusinessPreview] = useState('')
-  const [isLoadingBusinessPreview, setIsLoadingBusinessPreview] = useState(false)
+  const [artifactView, setArtifactView] = useState<ArtifactView>('business')
+  const [artifactPreview, setArtifactPreview] = useState('')
+  const [isLoadingArtifactPreview, setIsLoadingArtifactPreview] = useState(false)
+  const [isExportingArtifact, setIsExportingArtifact] = useState<ArtifactExportFormat | null>(null)
+  const [artifactExportError, setArtifactExportError] = useState<string | null>(null)
 
   const {
     session,
@@ -436,6 +492,27 @@ export default function SessionPage() {
     navigate(`/artifacts/${artifactId}`)
   }, [navigate])
 
+  const handleExportArtifact = useCallback(async (format: ArtifactExportFormat) => {
+    if (!linkedArtifactId) return
+    setArtifactExportError(null)
+    setIsExportingArtifact(format)
+    try {
+      const result = await artifactsApi.exportFile(linkedArtifactId, format, artifactView, false)
+      const url = URL.createObjectURL(result.blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = result.filename
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      URL.revokeObjectURL(url)
+    } catch {
+      setArtifactExportError('Falha ao exportar o artefato. Tente novamente em alguns instantes.')
+    } finally {
+      setIsExportingArtifact(null)
+    }
+  }, [artifactView, linkedArtifactId])
+
   useEffect(() => {
     const projectId = session?.project_id
     if (!projectId) {
@@ -464,30 +541,30 @@ export default function SessionPage() {
 
   useEffect(() => {
     if (!linkedArtifactId) {
-      setBusinessPreview('')
+      setArtifactPreview('')
       return
     }
 
     let active = true
-    setIsLoadingBusinessPreview(true)
-    artifactsApi.render(linkedArtifactId, 'business')
+    setIsLoadingArtifactPreview(true)
+    artifactsApi.render(linkedArtifactId, artifactView)
       .then((res) => {
         if (!active) return
-        setBusinessPreview(res.data.markdown ?? '')
+        setArtifactPreview(res.data.markdown ?? '')
       })
       .catch(() => {
         if (!active) return
-        setBusinessPreview('')
+        setArtifactPreview('')
       })
       .finally(() => {
         if (!active) return
-        setIsLoadingBusinessPreview(false)
+        setIsLoadingArtifactPreview(false)
       })
 
     return () => {
       active = false
     }
-  }, [linkedArtifactId])
+  }, [artifactView, linkedArtifactId])
 
   if (!sessionId) {
     navigate('/projects')
@@ -542,37 +619,74 @@ export default function SessionPage() {
         </button>
       </div>
 
+      {/* Desktop view mode */}
+      <div className="hidden lg:flex items-center gap-2 px-4 py-2 border-b border-border bg-background">
+        <button
+          type="button"
+          className="text-caption px-2 py-1 rounded-md border border-border hover:bg-muted transition-colors"
+          style={desktopLayout === 'chat' ? { background: 'var(--rs-primary-light)', color: 'var(--rs-primary)' } : undefined}
+          onClick={() => setDesktopLayout('chat')}
+        >
+          Somente chat
+        </button>
+        <button
+          type="button"
+          className="text-caption px-2 py-1 rounded-md border border-border hover:bg-muted transition-colors"
+          style={desktopLayout === 'split' ? { background: 'var(--rs-primary-light)', color: 'var(--rs-primary)' } : undefined}
+          onClick={() => setDesktopLayout('split')}
+        >
+          Dividir tela
+        </button>
+        <button
+          type="button"
+          className="text-caption px-2 py-1 rounded-md border border-border hover:bg-muted transition-colors"
+          style={desktopLayout === 'artifact' ? { background: 'var(--rs-primary-light)', color: 'var(--rs-primary)' } : undefined}
+          onClick={() => setDesktopLayout('artifact')}
+        >
+          Somente artefato
+        </button>
+      </div>
+
       {/* Content */}
       <div className="flex-1 flex min-h-0">
-        {/* Desktop split */}
+        {/* Desktop layouts */}
         <div className="hidden lg:flex w-full min-h-0">
-          <div className="flex flex-col" style={{ width: '40%', borderRight: '1px solid var(--border)' }}>
-            <SessionChatPanel
-              sessionId={sessionId}
-              projectId={session?.project_id ?? ''}
-              projectName={project?.name ?? 'Sessão de Elicitação'}
-              projectDomain={project?.business_domain}
-              sessionStatus={session?.status}
-              messages={messages}
-              isThinking={isThinking}
-              streamingMessage={streamingMessage}
-              error={error}
-              sendMessage={sendMessage}
-              markUserActivity={markUserActivity}
-              isLoadingMessages={isLoadingMessages}
-              navigate={navigate}
-              onUploadSuccess={handleUploadSuccess}
-              workflowPosition={session?.workflow_position ?? null}
-            />
-          </div>
-          <div className="flex flex-col" style={{ width: '60%' }}>
-            <SessionArtifactPanel
-              previewMarkdown={businessPreview}
-              isLoadingPreview={isLoadingBusinessPreview}
-              artifactId={linkedArtifactId}
-              onOpenArtifact={handleOpenArtifact}
-            />
-          </div>
+          {(desktopLayout === 'chat' || desktopLayout === 'split') && (
+            <div className="flex flex-col" style={{ width: desktopLayout === 'split' ? '40%' : '100%', borderRight: desktopLayout === 'split' ? '1px solid var(--border)' : 'none' }}>
+              <SessionChatPanel
+                sessionId={sessionId}
+                projectId={session?.project_id ?? ''}
+                projectName={project?.name ?? 'Sessão de Elicitação'}
+                projectDomain={project?.business_domain}
+                sessionStatus={session?.status}
+                messages={messages}
+                isThinking={isThinking}
+                streamingMessage={streamingMessage}
+                error={error}
+                sendMessage={sendMessage}
+                markUserActivity={markUserActivity}
+                isLoadingMessages={isLoadingMessages}
+                navigate={navigate}
+                onUploadSuccess={handleUploadSuccess}
+                workflowPosition={session?.workflow_position ?? null}
+              />
+            </div>
+          )}
+          {(desktopLayout === 'artifact' || desktopLayout === 'split') && (
+            <div className="flex flex-col" style={{ width: desktopLayout === 'split' ? '60%' : '100%' }}>
+              <SessionArtifactPanel
+                previewMarkdown={artifactPreview}
+                isLoadingPreview={isLoadingArtifactPreview}
+                artifactId={linkedArtifactId}
+                activeView={artifactView}
+                isExporting={isExportingArtifact}
+                exportError={artifactExportError}
+                onChangeView={setArtifactView}
+                onExport={handleExportArtifact}
+                onOpenArtifact={handleOpenArtifact}
+              />
+            </div>
+          )}
         </div>
 
         {/* Mobile tabbed */}
@@ -597,9 +711,14 @@ export default function SessionPage() {
             />
           ) : (
             <SessionArtifactPanel
-              previewMarkdown={businessPreview}
-              isLoadingPreview={isLoadingBusinessPreview}
+              previewMarkdown={artifactPreview}
+              isLoadingPreview={isLoadingArtifactPreview}
               artifactId={linkedArtifactId}
+              activeView={artifactView}
+              isExporting={isExportingArtifact}
+              exportError={artifactExportError}
+              onChangeView={setArtifactView}
+              onExport={handleExportArtifact}
               onOpenArtifact={handleOpenArtifact}
             />
           )}

@@ -13,10 +13,9 @@ from app.db.base import Base
 from app.modules.auth.models import RefreshToken, Tenant, User  # noqa: F401
 from app.modules.documents.models import Document, DocumentChunk  # noqa: F401
 from app.modules.projects.models import Project  # noqa: F401
-from app.modules.sessions.models import Session, Message  # noqa: F401
-from app.modules.workflows.models import Workflow, WorkflowStep, Agent  # noqa: F401
-
-from app.seeds.seed_workflows import SEED_AGENT, SEED_STEPS, SEED_WORKFLOW, seed
+from app.modules.sessions.models import Message, Session  # noqa: F401
+from app.modules.workflows.models import Agent, Workflow, WorkflowStep  # noqa: F401
+from app.seeds.seed_workflows import SEED_AGENT, SEED_STEPS, seed
 
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
 
@@ -99,9 +98,7 @@ def test_system_prompt_contem_instrucao_de_transicao():
         or "aprofundar" in prompt.lower()
         or "Agora que tenho" in prompt
     )
-    assert has_transition, (
-        "system_prompt não contém instrução de transição entre Fase 1 e Fase 2."
-    )
+    assert has_transition, "system_prompt não contém instrução de transição entre Fase 1 e Fase 2."
 
 
 def test_system_prompt_exige_apresentacao_com_nome_e_papel():
@@ -119,9 +116,9 @@ def test_system_prompt_exige_objetivo_e_estrutura_em_fases():
     assert "objetivo da entrevista" in prompt, (
         "Prompt deve instruir explicação do objetivo da entrevista na abertura."
     )
-    assert "duas fases" in prompt and "contextualização" in prompt and "descoberta guiada" in prompt, (
-        "Prompt deve explicitar a estrutura em fases."
-    )
+    assert (
+        "duas fases" in prompt and "contextualização" in prompt and "descoberta guiada" in prompt
+    ), "Prompt deve explicitar a estrutura em fases."
 
 
 def test_system_prompt_exige_sinalizacao_de_progresso_e_fechamento():
@@ -137,9 +134,7 @@ def test_system_prompt_exige_sinalizacao_de_progresso_e_fechamento():
 
 def test_seed_tem_cinco_steps():
     """AC 3, 5: seed deve ter exatamente 5 steps de elicitação."""
-    assert len(SEED_STEPS) == 5, (
-        f"SEED_STEPS tem {len(SEED_STEPS)} steps — esperados 5."
-    )
+    assert len(SEED_STEPS) == 5, f"SEED_STEPS tem {len(SEED_STEPS)} steps — esperados 5."
 
 
 def test_todos_os_steps_tem_profundidade_minima():
@@ -192,8 +187,9 @@ def test_agent_name_is_mary():
 @pytest.mark.asyncio
 async def test_seed_insere_agent_workflow_e_steps(db_session: AsyncSession, monkeypatch):
     """AC 5: seed() deve criar Agent, Workflow e 5 WorkflowSteps no banco."""
-    from sqlalchemy import select
     from unittest.mock import AsyncMock, MagicMock, patch
+
+    from sqlalchemy import select
 
     # Mock do create_async_engine para usar a sessão de teste
     mock_engine = MagicMock()
@@ -223,10 +219,11 @@ async def test_seed_insere_agent_workflow_e_steps(db_session: AsyncSession, monk
 
     # Verificar Steps
     from sqlalchemy import func
+
     count = await db_session.scalar(
-        select(func.count()).select_from(WorkflowStep).where(
-            WorkflowStep.workflow_id == workflow.id
-        )
+        select(func.count())
+        .select_from(WorkflowStep)
+        .where(WorkflowStep.workflow_id == workflow.id)
     )
     assert count == 5, f"Esperados 5 WorkflowSteps, encontrados {count}."
 
@@ -234,8 +231,9 @@ async def test_seed_insere_agent_workflow_e_steps(db_session: AsyncSession, monk
 @pytest.mark.asyncio
 async def test_seed_idempotente_sem_force(db_session: AsyncSession, monkeypatch):
     """AC 5: seed() sem --force não deve duplicar dados se workflow já existe."""
-    from sqlalchemy import select, func
     from unittest.mock import AsyncMock, MagicMock, patch
+
+    from sqlalchemy import func, select
 
     mock_engine = MagicMock()
     mock_session_cm = MagicMock()
@@ -253,9 +251,7 @@ async def test_seed_idempotente_sem_force(db_session: AsyncSession, monkeypatch)
         await seed(force=False)
 
     count = await db_session.scalar(
-        select(func.count()).select_from(Workflow).where(
-            Workflow.name == "elicitation-briefing"
-        )
+        select(func.count()).select_from(Workflow).where(Workflow.name == "elicitation-briefing")
     )
     assert count == 1, f"Workflow duplicado — encontrados {count} registros após 2 seeds."
 
@@ -263,8 +259,9 @@ async def test_seed_idempotente_sem_force(db_session: AsyncSession, monkeypatch)
 @pytest.mark.asyncio
 async def test_seed_com_force_substitui_prompt_antigo(db_session: AsyncSession, monkeypatch):
     """AC 5: seed() com --force deve substituir o agent e workflow sem deixar órfãos."""
-    from sqlalchemy import select, func
     from unittest.mock import AsyncMock, MagicMock, patch
+
+    from sqlalchemy import func, select
 
     mock_engine = MagicMock()
     mock_session_cm = MagicMock()
@@ -284,9 +281,7 @@ async def test_seed_com_force_substitui_prompt_antigo(db_session: AsyncSession, 
 
     # Deve existir exatamente 1 workflow, 1 agent e 5 steps
     wf_count = await db_session.scalar(
-        select(func.count()).select_from(Workflow).where(
-            Workflow.name == "elicitation-briefing"
-        )
+        select(func.count()).select_from(Workflow).where(Workflow.name == "elicitation-briefing")
     )
     assert wf_count == 1, f"Após --force, esperado 1 workflow, encontrado {wf_count}."
 
@@ -299,9 +294,9 @@ async def test_seed_com_force_substitui_prompt_antigo(db_session: AsyncSession, 
         select(Workflow).where(Workflow.name == "elicitation-briefing")
     )
     step_count = await db_session.scalar(
-        select(func.count()).select_from(WorkflowStep).where(
-            WorkflowStep.workflow_id == workflow.id
-        )
+        select(func.count())
+        .select_from(WorkflowStep)
+        .where(WorkflowStep.workflow_id == workflow.id)
     )
     assert step_count == 5, f"Após --force, esperados 5 steps, encontrados {step_count}."
 
@@ -312,30 +307,34 @@ async def test_seed_com_force_substitui_prompt_antigo(db_session: AsyncSession, 
     )
 
 
-async def test_seed_deleta_agentes_com_mesmo_nome_preventivamente(db_session: AsyncSession, monkeypatch):
+async def test_seed_deleta_agentes_com_mesmo_nome_preventivamente(
+    db_session: AsyncSession, monkeypatch
+):
     """Garantir que não existam duplicatas de agentes com o mesmo nome (QA-5-5-1-001)."""
-    from sqlalchemy import select, func
     from unittest.mock import AsyncMock, MagicMock, patch
+
+    from sqlalchemy import select
+
     from app.modules.workflows.models import Agent
-    
+
     # Inserir agente "sujo" manualmente
     stray_agent = Agent(name="Mary", role="analyst", system_prompt="old prompt")
     db_session.add(stray_agent)
     await db_session.commit()
-    
+
     mock_engine = MagicMock()
     mock_session_cm = MagicMock()
     mock_session_cm.__aenter__ = AsyncMock(return_value=db_session)
     mock_session_cm.__aexit__ = AsyncMock(return_value=False)
     mock_factory = MagicMock(return_value=mock_session_cm)
-    
+
     with (
         patch("app.seeds.seed_workflows.create_async_engine", return_value=mock_engine),
         patch("app.seeds.seed_workflows.sessionmaker", return_value=mock_factory),
     ):
         # Executar seed com force
         await seed(force=True)
-    
+
     # Verificar que só existe 1 agente chamado Mary e que o prompt é o novo
     agents = (await db_session.scalars(select(Agent).where(Agent.name == "Mary"))).all()
     assert len(agents) == 1, f"Deveria existir apenas 1 agente 'Mary', encontrados {len(agents)}."

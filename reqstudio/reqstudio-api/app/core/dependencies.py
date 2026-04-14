@@ -48,7 +48,7 @@ async def get_current_user(
 
     try:
         payload = decode_token(token)
-    except JWTError:
+    except JWTError as err:
         raise GuidedRecoveryError(
             code=ErrorCode.TOKEN_EXPIRED,
             message="Sua sessão expirou.",
@@ -56,7 +56,7 @@ async def get_current_user(
             actions=[{"label": "Fazer login", "route": "/login"}],
             severity=Severity.CRITICAL,
             status_code=401,
-        )
+        ) from err
 
     if payload.get("type") != "access":
         raise GuidedRecoveryError(
@@ -92,7 +92,7 @@ async def get_tenant_id(
 
     try:
         payload = decode_token(token)
-    except JWTError:
+    except JWTError as err:
         raise GuidedRecoveryError(
             code=ErrorCode.TOKEN_EXPIRED,
             message="Sua sessão expirou.",
@@ -100,7 +100,7 @@ async def get_tenant_id(
             actions=[{"label": "Fazer login", "route": "/login"}],
             severity=Severity.CRITICAL,
             status_code=401,
-        )
+        ) from err
 
     tenant_id = payload.get("tenant_id")
     if not tenant_id:

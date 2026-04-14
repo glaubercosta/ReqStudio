@@ -1,6 +1,6 @@
 # Story 6.5: Tela de Visualização e Exportação de Artefatos
 
-Status: in-progress
+Status: done
 
 ## Story
 
@@ -46,6 +46,8 @@ And exibe histórico de versões com data, razão e autor.
   - [x] Ajustar SessionPage para preview legível de negócio (sem JSON cru por padrão).
   - [x] Incluir CTA direto `Abrir artefato` com navegação 1 clique para `/artifacts/:id`.
   - [x] Implementar descoberta de artefato: prioriza artefato da sessão, fallback para último do projeto.
+  - [x] Evoluir SessionPage para modo unificado com alternância `Negócio/Técnico` e exportação inline.
+  - [x] Adicionar modos de layout desktop (`Somente chat`, `Dividir tela`, `Somente artefato`).
 
 ## Dev Notes
 
@@ -84,6 +86,11 @@ gpt-5 (Codex)
 - Validação hotfix de jornada (SessionPage):
   - `npm run test -- src/tests/SessionPage.progress-panel.test.tsx src/tests/SessionPage.autoscroll.test.tsx src/tests/SessionPage.upload.integration.test.tsx src/tests/SessionPage.session-expired.test.tsx`
   - Resultado: `8 passed`.
+- Validação 6.5b (UX unificada + render markdown):
+  - `npm run test -- src/tests/SessionPage.progress-panel.test.tsx src/tests/SessionPage.autoscroll.test.tsx src/tests/SessionPage.upload.integration.test.tsx src/tests/SessionPage.session-expired.test.tsx src/tests/ArtifactPage.test.tsx`
+  - Resultado: `11 passed`.
+  - `npm run build`
+  - Resultado: build/type-check concluídos com sucesso.
 - `bmad-code-review` (papel BMAD QA/DEV) executado sem findings bloqueantes.
 - Revalidação pós-fix de UX de exportação executada no review:
   - feedback de erro com `role="alert"` implementado e testado.
@@ -96,7 +103,8 @@ gpt-5 (Codex)
 - Histórico de versões exibido na lateral com data, razão e autor.
 - Navegação a partir do detalhe do projeto para abrir artefatos existentes.
 - Hotfix de jornada aplicado na SessionPage com CTA direto para artefato e preview legível.
-- Story retorna para `in-progress` para novo ciclo de review BMAD focado em UX/jornada.
+- Sessão passou a suportar fluxo unificado: leitura legível de artefato (Markdown renderizado), alternância negócio/técnico e exportação no mesmo contexto do chat.
+- Story finalizada após validação manual de jornada no fluxo de sessão.
 
 ### File List
 
@@ -109,6 +117,8 @@ gpt-5 (Codex)
 - `reqstudio/reqstudio-ui/src/test/artifactsApi.test.ts`
 - `reqstudio/reqstudio-ui/src/tests/ArtifactPage.test.tsx`
 - `reqstudio/reqstudio-ui/src/pages/SessionPage.tsx`
+- `reqstudio/reqstudio-ui/package.json`
+- `reqstudio/reqstudio-ui/package-lock.json`
 
 ### Change Log
 
@@ -116,3 +126,5 @@ gpt-5 (Codex)
 - 2026-04-08: Implementação concluída, validações executadas e story movida para `review`.
 - 2026-04-08: Ajuste pós-review aplicado (feedback de erro de exportação) com teste de regressão de UX.
 - 2026-04-08: Reaberta para hotfix de jornada (análise PM BMAD); SessionPage ajustada com acesso direto ao artefato.
+- 2026-04-08: Execução `dev-story` 6.5b com UX unificada na SessionPage (render markdown + alternância de visões + exportação inline).
+- 2026-04-08: Aceite manual do produto registrado; story movida para `done`.

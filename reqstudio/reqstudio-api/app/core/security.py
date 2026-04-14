@@ -6,7 +6,7 @@ jti (JWT ID): UUID adicionado ao refresh token para garantir unicidade
               mesmo quando dois tokens são criados no mesmo segundo.
 """
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from hashlib import sha256
 from typing import Any
 from uuid import uuid4
@@ -16,8 +16,8 @@ from jose import jwt
 
 from app.core.config import settings
 
-
 # ── Password ──────────────────────────────────────────────────────────────────
+
 
 def hash_password(password: str) -> str:
     """Gera hash bcrypt de uma senha em texto plano."""
@@ -42,9 +42,10 @@ def hash_token(token: str) -> str:
 
 # ── JWT ───────────────────────────────────────────────────────────────────────
 
+
 def _make_token(extra_claims: dict[str, Any], expires_delta: timedelta) -> str:
     """Base interna para criação de JWTs."""
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     payload = {
         **extra_claims,
         "iat": now,

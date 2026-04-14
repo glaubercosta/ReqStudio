@@ -19,12 +19,16 @@ from app.modules.artifacts.models import (
 
 class ArtifactSection(BaseModel):
     """Representa uma seção estruturada dentro do artefato."""
-    
+
     id: str = Field(..., description="Identificador único da seção (ex: 'func-reqs')")
     title: str = Field(..., description="Título visível da seção")
     content: str = Field("", description="Conteúdo em Markdown")
-    coverage: float = Field(0.0, ge=0.0, le=1.0, description="Nível de exploração/certeza (0.0 a 1.0)")
-    sources: list[str] = Field(default_factory=list, description="Lista de Message IDs que sustentam esta seção")
+    coverage: float = Field(
+        0.0, ge=0.0, le=1.0, description="Nível de exploração/certeza (0.0 a 1.0)"
+    )
+    sources: list[str] = Field(
+        default_factory=list, description="Lista de Message IDs que sustentam esta seção"
+    )
     last_updated: datetime | None = None
 
 
@@ -81,7 +85,7 @@ class ArtifactUpdate(BaseModel):
 
 class ArtifactResponse(BaseModel):
     """Schema completo de resposta do artefato."""
-    
+
     id: str
     project_id: str
     session_id: str | None
@@ -99,7 +103,7 @@ class ArtifactResponse(BaseModel):
 
 class ArtifactVersionResponse(BaseModel):
     """Schema de resposta para histórico de versões."""
-    
+
     id: str
     artifact_id: str
     version: int
@@ -113,12 +117,13 @@ class ArtifactVersionResponse(BaseModel):
 
 class ArtifactRenderResponse(BaseModel):
     """Schema para resposta de renderização Markdown."""
-    
+
     markdown: str
 
 
 class ArtifactSectionCoverage(BaseModel):
     """Resumo de cobertura por seção."""
+
     id: str
     title: str
     coverage: float
@@ -128,6 +133,7 @@ class ArtifactSectionCoverage(BaseModel):
 
 class ArtifactCoverageResponse(BaseModel):
     """Schema para resposta de cobertura detalhada."""
+
     artifact_id: str
     total_coverage: float
     sections: list[ArtifactSectionCoverage]

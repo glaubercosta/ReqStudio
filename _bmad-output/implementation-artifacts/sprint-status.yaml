@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-03-29T18:47:00-03:00
-last_updated: 2026-04-08T02:12:00-03:00
+last_updated: 2026-04-09T11:55:00-03:00
 project: ReqStudio
 project_key: NOKEY
 tracking_system: file-system
@@ -115,7 +115,7 @@ development_status:
   # ═══════════════════════════════════════════════════
   # Epic 6: Artefatos — Geração, Visualização e Exportação
   # ═══════════════════════════════════════════════════
-  epic-6: in-progress
+  epic-6: done
   6-0-gate-qa-hardening-sessoes-upload: done
   6-0b-dod-checklist-evidencias-terminal-handoff: done
   6-0c-hardening-ux-chat-confiabilidade-sessao: done
@@ -125,8 +125,8 @@ development_status:
   6-2x-hardening-renderizacao-dual-consistencia-robustez: done
   6-3-cobertura-por-secao-artefato: done
   6-4-exportacao-artefatos-markdown-json: done
-  6-5-tela-visualizacao-exportacao-artefatos: in-progress
-  epic-6-retrospective: optional
+  6-5-tela-visualizacao-exportacao-artefatos: done
+  epic-6-retrospective: done
 
   # ═══════════════════════════════════════════════════
   # Epic 7: Evolução Colaborativa (Growth)

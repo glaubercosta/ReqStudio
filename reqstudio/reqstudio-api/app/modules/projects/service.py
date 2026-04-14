@@ -8,7 +8,12 @@ from sqlalchemy import func, select
 from app.core.exceptions import not_found_error
 from app.db.tenant import TenantScope
 from app.modules.projects.models import PROJECT_STATUS_ACTIVE, Project
-from app.modules.projects.schemas import ProjectCreate, ProjectListResponse, ProjectResponse, ProjectUpdate
+from app.modules.projects.schemas import (
+    ProjectCreate,
+    ProjectListResponse,
+    ProjectResponse,
+    ProjectUpdate,
+)
 
 
 async def create_project(scope: TenantScope, payload: ProjectCreate) -> ProjectResponse:

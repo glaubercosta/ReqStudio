@@ -21,10 +21,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import context_isolation_error, not_found_error
 from app.db.tenant import TenantScope
-from app.modules.documents.models import Document, DocumentChunk
-from app.modules.engine.token_counter import estimate_tokens, estimate_messages_tokens
+from app.modules.documents.models import DocumentChunk
+from app.modules.engine.token_counter import estimate_messages_tokens, estimate_tokens
 from app.modules.sessions.models import Message, Session
-from app.modules.workflows.models import Agent, Workflow, WorkflowStep
+from app.modules.workflows.models import Agent, WorkflowStep
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +44,7 @@ class ContextResult:
         doc_count:      Quantidade de documentos incluídos
         project_id:     ID do projeto (para auditoria)
     """
+
     messages: list[dict[str, str]] = field(default_factory=list)
     total_tokens: int = 0
     truncated: bool = False
@@ -80,7 +81,10 @@ async def build_context(
 
     # 2. Carregar workflow step e system prompt
     system_prompt = await _load_system_prompt(
-        scope.db, session.workflow_id, session.workflow_position, user_name=user_name,
+        scope.db,
+        session.workflow_id,
+        session.workflow_position,
+        user_name=user_name,
     )
 
     # 3. Carregar documentos de referência
@@ -153,7 +157,9 @@ async def _load_system_prompt(
 
     # Inject user name if available
     if user_name:
-        combined += f"\n\nO usuário com quem você está conversando se chama {user_name}. Trate-o pelo nome."
+        combined += (
+            f"\n\nO usuário com quem você está conversando se chama {user_name}. Trate-o pelo nome."
+        )
 
     return combined
 
@@ -163,14 +169,17 @@ async def _load_document_chunks(
     project_id: str,
 ) -> list[dict[str, str]]:
     """Carrega chunks dos documentos do projeto, filtrados por tenant."""
-    stmt = (
-        scope.select(DocumentChunk, DocumentChunk.project_id == project_id)
-        .order_by(DocumentChunk.document_id, DocumentChunk.chunk_index)
+    stmt = scope.select(DocumentChunk, DocumentChunk.project_id == project_id).order_by(
+        DocumentChunk.document_id, DocumentChunk.chunk_index
     )
     rows = await scope.db.scalars(stmt)
     return [
-        {"document_id": c.document_id, "project_id": c.project_id,
-         "tenant_id": c.tenant_id, "content": c.content}
+        {
+            "document_id": c.document_id,
+            "project_id": c.project_id,
+            "tenant_id": c.tenant_id,
+            "content": c.content,
+        }
         for c in rows
     ]
 
@@ -180,14 +189,12 @@ async def _load_messages(
     session_id: str,
 ) -> list[dict]:
     """Carrega todas as mensagens da sessão ordenadas por index."""
-    stmt = (
-        scope.select(Message, Message.session_id == session_id)
-        .order_by(Message.message_index.asc())
+    stmt = scope.select(Message, Message.session_id == session_id).order_by(
+        Message.message_index.asc()
     )
     rows = await scope.db.scalars(stmt)
     return [
-        {"role": m.role, "content": m.content, "tenant_id": m.tenant_id,
-         "session_id": m.session_id}
+        {"role": m.role, "content": m.content, "tenant_id": m.tenant_id, "session_id": m.session_id}
         for m in rows
     ]
 
@@ -260,17 +267,15 @@ def _assemble_context(
         doc_text_parts = []
         for chunk in doc_chunks:
             doc_text_parts.append(chunk["content"])
-        doc_context = (
-            "=== DOCUMENTOS DE REFERÊNCIA DO PROJETO ===\n\n"
-            + "\n\n---\n\n".join(doc_text_parts)
+        doc_context = "=== DOCUMENTOS DE REFERÊNCIA DO PROJETO ===\n\n" + "\n\n---\n\n".join(
+            doc_text_parts
         )
         result_messages.append({"role": "system", "content": doc_context})
 
     # ── Layer 3: Artifact state ──
     if artifact_state:
-        artifact_text = (
-            "=== ESTADO ATUAL DO ARTEFATO ===\n\n"
-            + json.dumps(artifact_state, ensure_ascii=False, indent=2)
+        artifact_text = "=== ESTADO ATUAL DO ARTEFATO ===\n\n" + json.dumps(
+            artifact_state, ensure_ascii=False, indent=2
         )
         result_messages.append({"role": "system", "content": artifact_text})
 

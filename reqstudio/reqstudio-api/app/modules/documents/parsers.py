@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import re
 
-CHUNK_SIZE = 1500   # caracteres por chunk
+CHUNK_SIZE = 1500  # caracteres por chunk
 CHUNK_OVERLAP = 100  # sobreposição entre chunks para preservar contexto
 
 
@@ -58,8 +58,7 @@ def parse_pdf(content: bytes) -> list[str]:
         import fitz  # type: ignore[import-not-found]
     except ImportError as exc:
         raise ImportError(
-            "PyMuPDF (fitz) é necessário para parsing de PDF. "
-            "Instale com: pip install pymupdf"
+            "PyMuPDF (fitz) é necessário para parsing de PDF. Instale com: pip install pymupdf"
         ) from exc
 
     text_parts: list[str] = []

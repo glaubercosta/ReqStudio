@@ -91,6 +91,20 @@ function DetailSkeleton() {
 
 // ── Welcome Screen ────────────────────────────────────────────────────────────
 
+function formatRelativeTime(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime()
+  if (diff < 60_000) return 'agora mesmo'
+
+  const minutes = Math.floor(diff / 60_000)
+  const hours = Math.floor(diff / 3_600_000)
+  const days = Math.floor(diff / 86_400_000)
+  const rtf = new Intl.RelativeTimeFormat('pt-BR', { numeric: 'auto' })
+
+  if (minutes < 60) return rtf.format(-minutes, 'minute')
+  if (hours < 24) return rtf.format(-hours, 'hour')
+  return rtf.format(-days, 'day')
+}
+
 function WelcomeScreen({
   projectName,
   checklist,
@@ -106,19 +120,6 @@ function WelcomeScreen({
   activeSession: Session | null
   onStart: () => void
 }) {
-  function formatRelativeTime(dateStr: string): string {
-    const diff = Date.now() - new Date(dateStr).getTime()
-    if (diff < 60_000) return 'agora mesmo'
-    
-    const minutes = Math.floor(diff / 60_000)
-    const hours = Math.floor(diff / 3_600_000)
-    const days = Math.floor(diff / 86_400_000)
-    const rtf = new Intl.RelativeTimeFormat('pt-BR', { numeric: 'auto' })
-    
-    if (minutes < 60) return rtf.format(-minutes, 'minute')
-    if (hours < 24) return rtf.format(-hours, 'hour')
-    return rtf.format(-days, 'day')
-  }
 
 
   return (
@@ -247,6 +248,14 @@ export default function ProjectDetailPage() {
   const [editOpen, setEditOpen] = useState(false)
   const [archiveOpen, setArchiveOpen] = useState(false)
 
+  const { data: resumableSessions } = useProjectSessions(id ?? '')
+  const { data: projectArtifacts = [] } = useQuery({
+    queryKey: ['project-artifacts', id],
+    queryFn: () => artifactsApi.listByProject(id ?? '').then(r => r.data),
+    enabled: !!id,
+    staleTime: 20_000,
+  })
+
   if (!id) return null
 
   const handleLogout = async () => { await logout(); navigate('/login', { replace: true }) }
@@ -261,15 +270,8 @@ export default function ProjectDetailPage() {
   const checklist = buildChecklist(project?.progress_summary ?? null)
   const progressPct = getProgressPercent(checklist)
 
-  const { data: resumableSessions } = useProjectSessions(id ?? '')
   const activeSession: Session | null = resumableSessions?.[0] ?? null
   const hasSessions = !!activeSession
-  const { data: projectArtifacts = [] } = useQuery({
-    queryKey: ['project-artifacts', id],
-    queryFn: () => artifactsApi.listByProject(id ?? '').then(r => r.data),
-    enabled: !!id,
-    staleTime: 20_000,
-  })
 
   const handleStartSession = async () => {
     if (!id) return

@@ -51,11 +51,15 @@ async def list_sessions(
     project_id: str,
     page: int = Query(default=1, ge=1),
     size: int = Query(default=20, ge=1, le=100),
-    status: list[str] | None = Query(default=None, description="Filtrar por status (ex: active,paused)"),
+    status: list[str] | None = Query(
+        default=None, description="Filtrar por status (ex: active,paused)"
+    ),
     scope: TenantScope = Depends(get_tenant_scope),
 ) -> ApiResponse[SessionListResponse]:
     """Lista sessões de um projeto com paginação. Aceita filtro opcional de status."""
-    result = await service.list_sessions(scope, project_id=project_id, page=page, size=size, status=status)
+    result = await service.list_sessions(
+        scope, project_id=project_id, page=page, size=size, status=status
+    )
     return ApiResponse(data=result)
 
 
@@ -146,28 +150,43 @@ async def elicit_stream(
                 user_name=getattr(current_user, "display_name", None) or current_user.email,
             ):
                 if chunk.done:
-                    data = json.dumps({
-                        "content": "",
-                        "done": True,
-                        "metrics": {
-                            "input_tokens": chunk.metrics.input_tokens if chunk.metrics else 0,
-                            "output_tokens": chunk.metrics.output_tokens if chunk.metrics else 0,
-                            "cost_usd": chunk.metrics.cost_usd if chunk.metrics else 0,
-                            "latency_ms": round(chunk.metrics.latency_ms, 2) if chunk.metrics else 0,
-                        } if chunk.metrics else None,
-                    }, ensure_ascii=False)
+                    data = json.dumps(
+                        {
+                            "content": "",
+                            "done": True,
+                            "metrics": {
+                                "input_tokens": chunk.metrics.input_tokens if chunk.metrics else 0,
+                                "output_tokens": chunk.metrics.output_tokens
+                                if chunk.metrics
+                                else 0,
+                                "cost_usd": chunk.metrics.cost_usd if chunk.metrics else 0,
+                                "latency_ms": round(chunk.metrics.latency_ms, 2)
+                                if chunk.metrics
+                                else 0,
+                            }
+                            if chunk.metrics
+                            else None,
+                        },
+                        ensure_ascii=False,
+                    )
                     yield f"event: done\ndata: {data}\n\n"
                 else:
-                    data = json.dumps({
-                        "content": chunk.content,
-                        "done": False,
-                    }, ensure_ascii=False)
+                    data = json.dumps(
+                        {
+                            "content": chunk.content,
+                            "done": False,
+                        },
+                        ensure_ascii=False,
+                    )
                     yield f"event: message\ndata: {data}\n\n"
         except Exception as e:
-            error_data = json.dumps({
-                "code": getattr(e, "code", "INTERNAL_ERROR"),
-                "message": str(e),
-            }, ensure_ascii=False)
+            error_data = json.dumps(
+                {
+                    "code": getattr(e, "code", "INTERNAL_ERROR"),
+                    "message": str(e),
+                },
+                ensure_ascii=False,
+            )
             yield f"event: error\ndata: {error_data}\n\n"
 
     return StreamingResponse(

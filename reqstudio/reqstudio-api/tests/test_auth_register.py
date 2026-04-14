@@ -3,7 +3,6 @@
 import pytest
 from httpx import AsyncClient
 
-
 REGISTER_URL = "/api/v1/auth/register"
 
 

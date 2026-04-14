@@ -9,7 +9,7 @@ Seed data is populated via Alembic migration.
 
 import uuid
 
-from sqlalchemy import ForeignKey, Integer, JSON, String, Text
+from sqlalchemy import JSON, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -24,7 +24,9 @@ class Agent(Base):
     __tablename__ = "agents"
 
     id: Mapped[str] = mapped_column(
-        String(36), primary_key=True, default=lambda: str(uuid.uuid4()),
+        String(36),
+        primary_key=True,
+        default=lambda: str(uuid.uuid4()),
     )
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     role: Mapped[str] = mapped_column(String(100), nullable=False)
@@ -40,7 +42,9 @@ class Workflow(Base):
     __tablename__ = "workflows"
 
     id: Mapped[str] = mapped_column(
-        String(36), primary_key=True, default=lambda: str(uuid.uuid4()),
+        String(36),
+        primary_key=True,
+        default=lambda: str(uuid.uuid4()),
     )
     name: Mapped[str] = mapped_column(String(100), nullable=False, unique=True)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -63,18 +67,26 @@ class WorkflowStep(Base):
     __tablename__ = "workflow_steps"
 
     id: Mapped[str] = mapped_column(
-        String(36), primary_key=True, default=lambda: str(uuid.uuid4()),
+        String(36),
+        primary_key=True,
+        default=lambda: str(uuid.uuid4()),
     )
     workflow_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("workflows.id", ondelete="CASCADE"), nullable=False,
+        String(36),
+        ForeignKey("workflows.id", ondelete="CASCADE"),
+        nullable=False,
     )
     agent_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("agents.id"), nullable=False,
+        String(36),
+        ForeignKey("agents.id"),
+        nullable=False,
     )
     position: Mapped[int] = mapped_column(Integer, nullable=False)
     prompt_template: Mapped[str] = mapped_column(Text, nullable=False)
     step_type: Mapped[str] = mapped_column(
-        String(50), nullable=False, default="elicitation",
+        String(50),
+        nullable=False,
+        default="elicitation",
     )
 
     workflow: Mapped["Workflow"] = relationship(back_populates="steps")

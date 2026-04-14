@@ -5,17 +5,17 @@ Handles CRUD for Artifacts, automatic snapshotting and coverage calculation.
 
 import json
 import re
-from typing import Any, Sequence
+from collections.abc import Sequence
+from typing import Any
 
-from sqlalchemy import select, desc
+from sqlalchemy import desc, select
 
 from app.core.exceptions import not_found_error
 from app.db.tenant import TenantScope
-from app.modules.artifacts.models import Artifact, ArtifactVersion, ARTIFACT_STATUS_DRAFT
-from app.modules.artifacts.schemas import ArtifactCreate, ArtifactUpdate, ArtifactState
+from app.modules.artifacts.models import ARTIFACT_STATUS_DRAFT, Artifact, ArtifactVersion
 from app.modules.artifacts.renderers.markdown import render_artifact_to_markdown
+from app.modules.artifacts.schemas import ArtifactCreate, ArtifactState, ArtifactUpdate
 from app.modules.projects.models import Project
-
 
 LOW_COVERAGE_THRESHOLD = 0.3
 HIGH_COVERAGE_THRESHOLD = 0.7
@@ -57,13 +57,15 @@ def _calculate_coverage_snapshot(state: ArtifactState) -> dict[str, Any]:
     sections_snapshot: list[dict[str, Any]] = []
     for section in state.sections:
         normalized_coverage = _clamp_coverage(section.coverage)
-        sections_snapshot.append({
-            "id": section.id,
-            "title": section.title,
-            "coverage": normalized_coverage,
-            "coverage_band": _coverage_band(normalized_coverage),
-            "card_state": _card_state(normalized_coverage),
-        })
+        sections_snapshot.append(
+            {
+                "id": section.id,
+                "title": section.title,
+                "coverage": normalized_coverage,
+                "coverage_band": _coverage_band(normalized_coverage),
+                "card_state": _card_state(normalized_coverage),
+            }
+        )
 
     if not sections_snapshot:
         total_coverage = 0.0
@@ -84,7 +86,7 @@ async def create_artifact(scope: TenantScope, data: ArtifactCreate) -> Artifact:
     project = await scope.db.scalar(scope.where_id(Project, data.project_id))
     if not project:
         raise not_found_error("projeto")
-        
+
     initial_state = {"sections": [], "metadata": {"total_coverage": 0.0}}
     artifact = Artifact(
         project_id=data.project_id,
@@ -94,22 +96,22 @@ async def create_artifact(scope: TenantScope, data: ArtifactCreate) -> Artifact:
         title=data.title,
         artifact_state=initial_state,
         version=1,
-        status=ARTIFACT_STATUS_DRAFT
+        status=ARTIFACT_STATUS_DRAFT,
     )
-    
+
     scope.db.add(artifact)
     await scope.db.flush()
-    
+
     # Criar versão inicial (Snapshot 1)
     version = ArtifactVersion(
         artifact_id=artifact.id,
         tenant_id=scope.tenant_id,
         version=1,
         state_snapshot=artifact.artifact_state,
-        change_reason="Criação inicial"
+        change_reason="Criação inicial",
     )
     scope.db.add(version)
-    
+
     return artifact
 
 
@@ -124,12 +126,12 @@ async def get_artifact(scope: TenantScope, artifact_id: str) -> Artifact:
 async def update_artifact(scope: TenantScope, artifact_id: str, data: ArtifactUpdate) -> Artifact:
     """Atualiza o estado do artefato, recalcula cobertura e gera nova versão."""
     artifact = await get_artifact(scope, artifact_id)
-    
+
     # Recalcular cobertura antes de salvar
     state = data.artifact_state
     coverage_snapshot = _calculate_coverage_snapshot(state)
     state.metadata.total_coverage = coverage_snapshot["total_coverage"]
-    
+
     # Atualizar objeto Artifact
     artifact.version += 1
     artifact.artifact_state = state.model_dump()
@@ -137,12 +139,12 @@ async def update_artifact(scope: TenantScope, artifact_id: str, data: ArtifactUp
         "total": state.metadata.total_coverage,
         "band": _coverage_band(state.metadata.total_coverage),
     }  # Snapshot rápido para dashboard
-    
+
     if data.status:
         artifact.status = data.status
-        
+
     scope.db.add(artifact)
-    
+
     # Criar nova entrada de histórico
     version = ArtifactVersion(
         artifact_id=artifact.id,
@@ -153,7 +155,7 @@ async def update_artifact(scope: TenantScope, artifact_id: str, data: ArtifactUp
         changed_by=data.changed_by,
     )
     scope.db.add(version)
-    
+
     await scope.db.flush()
     return artifact
 
@@ -161,7 +163,7 @@ async def update_artifact(scope: TenantScope, artifact_id: str, data: ArtifactUp
 async def get_artifact_versions(scope: TenantScope, artifact_id: str) -> Sequence[ArtifactVersion]:
     """Lista o histórico de versões de um artefato."""
     await get_artifact(scope, artifact_id)
-    
+
     stmt = (
         select(ArtifactVersion)
         .where(ArtifactVersion.artifact_id == artifact_id)
@@ -204,7 +206,7 @@ async def get_artifact_markdown(
 async def get_artifact_export(
     scope: TenantScope,
     artifact_id: str,
-    format: str = "markdown",
+    export_format: str = "markdown",
     view: str = "business",
     show_business_ids: bool = False,
 ) -> tuple[str, str]:
@@ -215,12 +217,12 @@ async def get_artifact_export(
     clean_title = _slugify_filename_part(artifact.title)
     timestamp = artifact.updated_at.strftime("%Y%m%d")
     total_coverage = float(artifact.artifact_state.get("metadata", {}).get("total_coverage", 0.0))
-    
-    if format == "json":
+
+    if export_format == "json":
         content = json.dumps(artifact.artifact_state, indent=2, ensure_ascii=False)
         filename = f"reqstudio_{clean_title}_{timestamp}_v{artifact.version}.json"
         return content, filename
-        
+
     # Default: Markdown
     md_content = await get_artifact_markdown(
         scope,
@@ -228,7 +230,7 @@ async def get_artifact_export(
         view=view,
         show_business_ids=show_business_ids,
     )
-    
+
     # Adicionar Header de Exportação
     header = (
         f"---\n"
@@ -240,7 +242,7 @@ async def get_artifact_export(
         f"Export Date: {timestamp}\n"
         f"---\n\n"
     )
-    
+
     filename = f"reqstudio_{clean_title}_{timestamp}_v{artifact.version}.md"
     return header + md_content, filename
 
@@ -250,7 +252,7 @@ async def get_artifact_coverage(scope: TenantScope, artifact_id: str) -> dict:
     artifact = await get_artifact(scope, artifact_id)
     state = ArtifactState.model_validate(artifact.artifact_state)
     snapshot = _calculate_coverage_snapshot(state)
-    
+
     return {
         "artifact_id": artifact.id,
         "total_coverage": snapshot["total_coverage"],

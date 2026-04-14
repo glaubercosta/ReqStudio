@@ -16,7 +16,7 @@ Isso garante que o filtro `tenant_id == scope.tenant_id` esteja
 **sempre** presente, impedindo leakage de dados cross-tenant.
 """
 
-from typing import Any, Type
+from typing import Any
 
 from fastapi import Depends
 from sqlalchemy import select as sa_select
@@ -46,7 +46,7 @@ class TenantScope:
         self.db = db
         self.tenant_id = tenant_id
 
-    def select(self, model: Type[Any], *extra_filters: Any) -> Select:
+    def select(self, model: type[Any], *extra_filters: Any) -> Select:
         """Constrói uma query SELECT com where(Model.tenant_id == self.tenant_id).
 
         Args:
@@ -75,7 +75,7 @@ class TenantScope:
             stmt = stmt.where(f)
         return stmt
 
-    def where_id(self, model: Type[Any], record_id: str) -> Select:
+    def where_id(self, model: type[Any], record_id: str) -> Select:
         """Constrói SELECT por ID com filtro de tenant.
 
         Retorna 404 implícito: se o ID não pertencer ao tenant,

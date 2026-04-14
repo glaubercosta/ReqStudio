@@ -8,7 +8,7 @@ import uuid
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import ForeignKey, Integer, JSON, String, Text
+from sqlalchemy import JSON, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base, TenantMixin
@@ -33,25 +33,23 @@ class Artifact(TenantMixin, Base):
 
     __tablename__ = "artifacts"
 
-    id: Mapped[str] = mapped_column(
-        String(36), primary_key=True, default=lambda: str(uuid.uuid4())
-    )
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     project_id: Mapped[str] = mapped_column(
         String(36), ForeignKey("projects.id", ondelete="CASCADE"), nullable=False, index=True
     )
     session_id: Mapped[str | None] = mapped_column(
         String(36), ForeignKey("sessions.id", ondelete="SET NULL"), nullable=True, index=True
     )
-    
+
     artifact_type: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
     title: Mapped[str] = mapped_column(String(255), nullable=False)
-    
+
     # Estado canônico do artefato (JSONB)
     artifact_state: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False, default=dict)
-    
+
     # Dados de cobertura calculada (Story 6.3)
     coverage_data: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True, default=None)
-    
+
     version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     status: Mapped[str] = mapped_column(String(20), nullable=False, default=ARTIFACT_STATUS_DRAFT)
 
@@ -73,19 +71,19 @@ class ArtifactVersion(TenantMixin, Base):
 
     __tablename__ = "artifact_versions"
 
-    id: Mapped[str] = mapped_column(
-        String(36), primary_key=True, default=lambda: str(uuid.uuid4())
-    )
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     artifact_id: Mapped[str] = mapped_column(
         String(36), ForeignKey("artifacts.id", ondelete="CASCADE"), nullable=False, index=True
     )
-    
+
     version: Mapped[int] = mapped_column(Integer, nullable=False)
     state_snapshot: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False)
-    
+
     change_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
-    changed_by: Mapped[str | None] = mapped_column(String(36), nullable=True) # User ID se implementado
-    
+    changed_by: Mapped[str | None] = mapped_column(
+        String(36), nullable=True
+    )  # User ID se implementado
+
     created_at: Mapped[datetime] = mapped_column(
         nullable=False, default=lambda: datetime.utcnow().replace(microsecond=0)
     )

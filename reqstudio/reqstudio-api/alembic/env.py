@@ -13,12 +13,16 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from app.core.config import settings
 from app.db.base import Base
-from app.modules.auth.models import RefreshToken, Tenant, User  # noqa: F401 — registers models with metadata
+from app.modules.artifacts.models import Artifact, ArtifactVersion  # noqa: F401
+from app.modules.auth.models import (  # noqa: F401 — registers models with metadata
+    RefreshToken,
+    Tenant,
+    User,
+)
 from app.modules.documents.models import Document, DocumentChunk  # noqa: F401
 from app.modules.projects.models import Project  # noqa: F401
-from app.modules.sessions.models import Session, Message  # noqa: F401
-from app.modules.workflows.models import Workflow, WorkflowStep, Agent  # noqa: F401
-from app.modules.artifacts.models import Artifact, ArtifactVersion  # noqa: F401
+from app.modules.sessions.models import Message, Session  # noqa: F401
+from app.modules.workflows.models import Agent, Workflow, WorkflowStep  # noqa: F401
 
 # Alembic Config object
 config = context.config

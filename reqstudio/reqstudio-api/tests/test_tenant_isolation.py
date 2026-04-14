@@ -10,8 +10,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.tenant import TenantScope
 
-
 # ── Testes unitários do TenantScope ──────────────────────────────────────────
+
 
 @pytest.mark.asyncio
 async def test_tenant_scope_select_filters_by_tenant(db_session: AsyncSession):
@@ -42,8 +42,9 @@ async def test_tenant_scope_where_id_includes_tenant_filter(db_session: AsyncSes
 @pytest.mark.asyncio
 async def test_tenant_scope_raises_for_model_without_tenant_id(db_session: AsyncSession):
     """AC#5: model sem tenant_id levanta AttributeError (TenantMixin ausente)."""
-    from app.db.base import Base
     from sqlalchemy.orm import Mapped, mapped_column
+
+    from app.db.base import Base
 
     class ModelSemTenant(Base):
         __tablename__ = "sem_tenant_test"
@@ -55,6 +56,7 @@ async def test_tenant_scope_raises_for_model_without_tenant_id(db_session: Async
 
 
 # ── Testes de isolamento via API ──────────────────────────────────────────────
+
 
 @pytest.mark.asyncio
 async def test_tenant_a_data_not_visible_to_tenant_b(
@@ -103,6 +105,7 @@ async def test_token_contains_correct_tenant_id(
 ):
     """AC#2: JWT do tenant A embute o tenant_id correto nos claims."""
     from jose import jwt
+
     from app.core.config import settings
 
     payload = jwt.decode(
