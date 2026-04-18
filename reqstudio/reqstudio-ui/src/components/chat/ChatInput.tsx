@@ -13,14 +13,13 @@ import { uploadDocument } from '@/services/documentsApi'
 
 const MAX_UPLOAD_BYTES = 10 * 1024 * 1024 // 10 MB — política de UX (servidor aceita até 20 MB)
 const VALID_UPLOAD_EXTENSIONS = ['.pdf', '.md', '.markdown', '.txt']
-const UPLOAD_ERROR_MSG = 'Apenas PDF, Markdown ou TXT até 10 MB.'
 
 function validateUploadFile(file: File): string | null {
   const fileName = file.name.toLowerCase()
   const hasValidExt = VALID_UPLOAD_EXTENSIONS.some((ext) => fileName.endsWith(ext))
 
-  if (!hasValidExt) return UPLOAD_ERROR_MSG
-  if (file.size > MAX_UPLOAD_BYTES) return UPLOAD_ERROR_MSG
+  if (!hasValidExt) return 'Formato não suportado. Use PDF, Markdown ou TXT.'
+  if (file.size > MAX_UPLOAD_BYTES) return 'Arquivo muito grande. Máximo: 10 MB.'
   return null
 }
 
@@ -83,7 +82,10 @@ export function ChatInput({
   const handleFileChange = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0]
-      if (!file) return
+      if (!file) {
+        setUploadError(null)
+        return
+      }
 
       // Reset input so the same file can be selected again
       e.target.value = ''

@@ -1,3 +1,8 @@
+## Deferred from: sessão QQ quick-dev 2026-04-14 (decisão PM)
+
+- [ ] [PM][Feature] Apresentação do agente e objetivos no início da sessão de elicitação — requer elicitação de requisitos antes de implementar.
+- [ ] [PM][Feature] Tela de acompanhamento de status do projeto — nova rota/feature, requer elicitação de requisitos antes de implementar.
+
 ## Deferred from: code review of 5-5-1-system-prompts-bmad-quality.md (2026-04-02)
 
 - [x] [Review][Defer] A deleção forçada de Agent poderá quebrar FK se for compartilhado no futuro [app/seeds/seed_workflows.py:200] — deferred, edge case futuro
@@ -8,8 +13,8 @@
 
 ## Deferred from: code review of 5-5-4-upload-documento-chatinput.md (2026-04-03)
 
-- F-2: `uploadError` não limpa ao abrir diálogo de arquivo e cancelar sem seleção — impacto de UX baixo, edge case improvável em uso real.
-- F-5: Arquivo sem extensão (ex: `README`) gera mensagem de erro genérica sem indicar motivo — cenário improvável, aceitável no MVP.
+- [x] F-2: `uploadError` não limpa ao abrir diálogo de arquivo e cancelar sem seleção — corrigido: `setUploadError(null)` no early return de `handleFileChange`.
+- [x] F-5: Arquivo sem extensão (ex: `README`) gera mensagem de erro genérica sem indicar motivo — corrigido: mensagens distintas para extensão inválida vs. tamanho excedido em `validateUploadFile`.
 
 
 ## Deferred from: code review of 5-5-5-telemetria-baseline-tokens-custo.md (2026-04-03)
