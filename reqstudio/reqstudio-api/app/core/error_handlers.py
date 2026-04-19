@@ -14,7 +14,6 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app.core.config import settings
 from app.core.exceptions import (
     ErrorCode,
     GuidedRecoveryError,
@@ -96,9 +95,9 @@ def register_error_handlers(app: FastAPI) -> None:
             extra={"request_id": request_id, "path": str(request.url)},
         )
 
-        # Story 5.5.x: Injeção de Visibilidade
-        detail = str(exc) if settings.DEBUG else ""
-        err = internal_error(detail=detail)
+        # Never expose internal exception details to clients, even in DEBUG.
+        # The exception is already logged above via logger.exception().
+        err = internal_error(detail="")
 
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
