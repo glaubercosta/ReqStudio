@@ -12,7 +12,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { sessionsApi, type Message } from '@/services/sessionsApi'
-import { streamElicit, type SSEEvent } from '@/services/sseClient'
+import { streamElicit, streamKickstart, streamReturnGreeting, type SSEEvent } from '@/services/sseClient'
 
 interface UseSessionOptions {
   sessionId: string
@@ -46,7 +46,11 @@ export function useSession({ sessionId }: UseSessionOptions) {
   const [error, setError] = useState<SessionUiError | null>(null)
   const [sessionTimedOut, setSessionTimedOut] = useState(false)
   const [sessionEndCode, setSessionEndCode] = useState<string | null>(null)
+  const [isKickstarting, setIsKickstarting] = useState(false)
+  const [isReturning, setIsReturning] = useState(false)
   const abortRef = useRef<AbortController | null>(null)
+  const kickstartDoneRef = useRef(false)
+  const returnGreetingDoneRef = useRef(false)
   const lastActivityAtRef = useRef<number>(0)
   const inactivityTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -122,29 +126,115 @@ export function useSession({ sessionId }: UseSessionOptions) {
     scheduleInactivityTimer()
   }, [scheduleInactivityTimer, session?.status, sessionId, storageKey])
 
-  // ── Auto-resume de sessão pausada ──
+  // ── Kickstart — abertura proativa da Mary no primeiro acesso (Story 7.1) ──
+  useEffect(() => {
+    if (!sessionId || !session) return
+    if (session.status === 'completed' || session.status === 'paused') return
+    if (messagesQuery.isLoading || !messagesQuery.isSuccess) return
+    if (messages.length > 0) return
+    if (isKickstarting || kickstartDoneRef.current) return
+
+    kickstartDoneRef.current = true
+    const abortCtrl = new AbortController()
+
+    queueMicrotask(() => {
+      if (abortCtrl.signal.aborted) return
+      setIsKickstarting(true)
+      setStreamingMessage({ content: '', isStreaming: true })
+    })
+
+    streamKickstart(sessionId, (event: SSEEvent) => {
+      if (event.type === 'message') {
+        setStreamingMessage((prev) => ({
+          content: (prev?.content ?? '') + event.data.content,
+          isStreaming: true,
+        }))
+      } else if (event.type === 'done') {
+        setStreamingMessage(null)
+        setIsKickstarting(false)
+        queryClient.invalidateQueries({ queryKey: ['messages', sessionId] })
+        queryClient.invalidateQueries({ queryKey: ['session', sessionId] })
+      } else if (event.type === 'error') {
+        setStreamingMessage(null)
+        setIsKickstarting(false)
+        queryClient.invalidateQueries({ queryKey: ['messages', sessionId] })
+      }
+    }, abortCtrl.signal).catch(() => {
+      setStreamingMessage(null)
+      setIsKickstarting(false)
+    })
+
+    return () => {
+      abortCtrl.abort()
+    }
+  }, [
+    sessionId,
+    session,
+    session?.status,
+    messages.length,
+    messagesQuery.isLoading,
+    messagesQuery.isSuccess,
+    isKickstarting,
+    queryClient,
+  ])
+
+  // ── Return greeting — retomada com contexto (Story 7.3) ──
+  useEffect(() => {
+    if (!sessionId || !session) return
+    if (session.status !== 'paused') return
+    if (sessionTimedOut) return
+    if (isReturning || returnGreetingDoneRef.current) return
+
+    returnGreetingDoneRef.current = true
+    const abortCtrl = new AbortController()
+
+    queueMicrotask(() => {
+      if (abortCtrl.signal.aborted) return
+      setIsReturning(true)
+      setStreamingMessage({ content: '', isStreaming: true })
+    })
+
+    streamReturnGreeting(sessionId, (event: SSEEvent) => {
+      if (event.type === 'message') {
+        setStreamingMessage((prev) => ({
+          content: (prev?.content ?? '') + event.data.content,
+          isStreaming: true,
+        }))
+      } else if (event.type === 'done') {
+        setStreamingMessage(null)
+        setIsReturning(false)
+        queryClient.invalidateQueries({ queryKey: ['messages', sessionId] })
+        queryClient.invalidateQueries({ queryKey: ['session', sessionId] })
+      } else if (event.type === 'error') {
+        // Fallback silencioso: resume via API REST
+        setStreamingMessage(null)
+        setIsReturning(false)
+        sessionsApi.updateStatus(sessionId, 'active').catch(() => {})
+        queryClient.invalidateQueries({ queryKey: ['messages', sessionId] })
+        queryClient.invalidateQueries({ queryKey: ['session', sessionId] })
+      }
+    }, abortCtrl.signal).catch(() => {
+      setStreamingMessage(null)
+      setIsReturning(false)
+    })
+
+    return () => {
+      abortCtrl.abort()
+    }
+  }, [sessionId, session, session?.status, sessionTimedOut, isReturning, queryClient])
+
+  // ── Pause on unmount (navigating away) — best effort ──
   useEffect(() => {
     if (!sessionId || !session) return
     if (session.status === 'completed') return
     if (sessionTimedOut) return
 
-    if (session.status === 'paused') {
-      sessionsApi.updateStatus(sessionId, 'active')
-        .then(() => {
-          queryClient.invalidateQueries({ queryKey: ['session', sessionId] })
-        })
-        .catch(() => {
-          // silenciar erros de resume; UX já trata falhas por erro visível
-        })
-    }
-
     return () => {
-      // Pause on unmount (navigating away) — best effort
       if (session.status === 'active') {
         sessionsApi.updateStatus(sessionId, 'paused').catch(() => {})
       }
     }
-  }, [sessionId, session?.status, session, queryClient, sessionTimedOut])
+  }, [sessionId, session?.status, session, sessionTimedOut])
 
   // ── Inatividade do usuário (30 min) ──
   useEffect(() => {
@@ -304,6 +394,8 @@ export function useSession({ sessionId }: UseSessionOptions) {
     cancel,
     pause,
     markUserActivity,
+    isKickstarting,
+    isReturning,
     isLoadingSession: sessionQuery.isLoading,
     isLoadingMessages: messagesQuery.isLoading,
   }

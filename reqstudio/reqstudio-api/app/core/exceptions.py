@@ -48,6 +48,12 @@ class ErrorCode(StrEnum):
     # --- Engine (Story 5.2+) ---
     CONTEXT_ISOLATION_VIOLATION = "CONTEXT_ISOLATION_VIOLATION"
 
+    # --- Sessão — Kickstart (Story 7.1) ---
+    SESSION_ALREADY_STARTED = "SESSION_ALREADY_STARTED"
+
+    # --- Sessão — Return Greeting (Story 7.3) ---
+    SESSION_NOT_PAUSED = "SESSION_NOT_PAUSED"
+
 
 class Severity(StrEnum):
     """Severidade do erro para o frontend renderizar o feedback adequado."""
@@ -177,6 +183,28 @@ def not_found_error(resource: str = "recurso") -> GuidedRecoveryError:
         actions=[{"label": "Voltar à lista", "route": "/projects"}],
         severity=Severity.WARNING,
         status_code=404,
+    )
+
+
+def session_already_started_error() -> GuidedRecoveryError:
+    return GuidedRecoveryError(
+        code=ErrorCode.SESSION_ALREADY_STARTED,
+        message="Esta sessão já foi iniciada.",
+        help="O kickstart só pode ser executado em sessões sem mensagens.",
+        actions=[{"label": "Voltar ao chat", "action": "close"}],
+        severity=Severity.WARNING,
+        status_code=409,
+    )
+
+
+def session_not_paused_error() -> GuidedRecoveryError:
+    return GuidedRecoveryError(
+        code=ErrorCode.SESSION_NOT_PAUSED,
+        message="Esta sessão não está pausada.",
+        help="O greeting de retorno só pode ser gerado em sessões com status 'paused'.",
+        actions=[{"label": "Voltar ao chat", "action": "close"}],
+        severity=Severity.WARNING,
+        status_code=409,
     )
 
 

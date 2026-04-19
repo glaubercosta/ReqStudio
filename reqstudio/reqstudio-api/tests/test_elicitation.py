@@ -96,8 +96,9 @@ async def test_elicit_full_pipeline(client: AsyncClient, tenant_a_token, seed_wo
     assert done_chunks[0].metrics.cost_usd == 0.001
 
     # Validar mensagens salvas
+    # Story 7.2: seed_workflows tem 1 step → completion path gera mensagem de conclusão extra
     messages = await _get_messages(client, tenant_a_token, session["id"])
-    assert len(messages) == 2  # user + assistant
+    assert len(messages) == 3  # user + assistant(elicit) + assistant(completion)
     assert messages[0]["role"] == "user"
     assert messages[0]["content"] == "Quero criar um app de finanças"
     assert messages[1]["role"] == "assistant"
@@ -107,6 +108,7 @@ async def test_elicit_full_pipeline(client: AsyncClient, tenant_a_token, seed_wo
     assert messages[1]["cost_usd"] == 0.001
     assert messages[1]["latency_ms"] is not None
     assert messages[1]["model"] == "mock"
+    assert messages[2]["role"] == "assistant"  # completion message
 
 
 @pytest.mark.asyncio

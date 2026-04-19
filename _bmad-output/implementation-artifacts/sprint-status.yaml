@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-03-29T18:47:00-03:00
-last_updated: 2026-04-09T11:55:00-03:00
+last_updated: 2026-04-18T00:00:00-03:00
 project: ReqStudio
 project_key: NOKEY
 tracking_system: file-system
@@ -129,21 +129,31 @@ development_status:
   epic-6-retrospective: done
 
   # ═══════════════════════════════════════════════════
-  # Epic 7: Evolução Colaborativa (Growth)
+  # Epic 7: Engajamento e Momentum — Pos-Testes com Usuarios (MVP)
   # ═══════════════════════════════════════════════════
-  epic-7: backlog
-  7-1-rbac-papeis-permissoes-diferenciadas: backlog
-  7-2-publicacao-seletiva-artefatos: backlog
-  7-3-feedback-duvidas-por-secao-artefato: backlog
-  7-4-re-analise-assistida-ia-feedback: backlog
-  7-5-notificacoes-atualizacao-artefatos: backlog
+  epic-7: in-progress
+  7-1-kickstart-projeto-mensagem-inicial-mary: review
+  7-2-transicao-etapa-resumo-automatico: review
+  7-3-greeting-retorno-projeto: review
+  7-4-painel-lateral-progresso-sessao: ready-for-dev
   epic-7-retrospective: optional
 
   # ═══════════════════════════════════════════════════
-  # Epic 8: Elicitação Brownfield (Growth/Vision)
+  # Epic 8: Evolução Colaborativa (Growth)
   # ═══════════════════════════════════════════════════
   epic-8: backlog
-  8-1-importacao-documentacao-projeto-existente: backlog
-  8-2-elicitacao-focada-gaps-analise-impacto: backlog
-  8-3-conexao-repositorio-codigo: backlog
+  8-1-rbac-papeis-permissoes-diferenciadas: backlog
+  8-2-publicacao-seletiva-artefatos: backlog
+  8-3-feedback-duvidas-por-secao-artefato: backlog
+  8-4-re-analise-assistida-ia-feedback: backlog
+  8-5-notificacoes-atualizacao-artefatos: backlog
   epic-8-retrospective: optional
+
+  # ═══════════════════════════════════════════════════
+  # Epic 9: Elicitação Brownfield (Growth/Vision)
+  # ═══════════════════════════════════════════════════
+  epic-9: backlog
+  9-1-importacao-documentacao-projeto-existente: backlog
+  9-2-elicitacao-focada-gaps-analise-impacto: backlog
+  9-3-conexao-repositorio-codigo: backlog
+  epic-9-retrospective: optional

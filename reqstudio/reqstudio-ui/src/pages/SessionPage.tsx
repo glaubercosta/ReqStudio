@@ -46,6 +46,8 @@ interface SessionChatPanelProps {
   navigate: ReturnType<typeof useNavigate>
   onUploadSuccess: (filename: string) => void
   workflowPosition: Record<string, unknown> | null
+  isKickstarting: boolean
+  isReturning: boolean
 }
 
 function SessionChatPanel({
@@ -64,6 +66,8 @@ function SessionChatPanel({
   navigate,
   onUploadSuccess,
   workflowPosition,
+  isKickstarting,
+  isReturning,
 }: SessionChatPanelProps) {
   const messagesContainerRef = useRef<HTMLDivElement>(null)
   const autoScrollResetRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -304,11 +308,15 @@ function SessionChatPanel({
 
       <ChatInput
         onSend={sendMessage}
-        disabled={isThinking || sessionStatus === 'completed'}
+        disabled={isThinking || isKickstarting || isReturning || sessionStatus === 'completed'}
         placeholder={
           sessionStatus === 'completed'
             ? 'Sessão concluída'
-            : 'Descreva seu projeto ou responda...'
+            : isKickstarting
+              ? 'Mary está se apresentando...'
+              : isReturning
+                ? 'Mary está resumindo o progresso...'
+                : 'Descreva seu projeto ou responda...'
         }
         projectId={projectId}
         onUploadSuccess={handleUpload}
@@ -458,6 +466,8 @@ export default function SessionPage() {
     error,
     sendMessage,
     markUserActivity,
+    isKickstarting,
+    isReturning,
     isLoadingSession,
     isLoadingMessages,
   } = useSession({ sessionId: sessionId ?? '' })
@@ -669,6 +679,8 @@ export default function SessionPage() {
                 navigate={navigate}
                 onUploadSuccess={handleUploadSuccess}
                 workflowPosition={session?.workflow_position ?? null}
+                isKickstarting={isKickstarting}
+                isReturning={isReturning}
               />
             </div>
           )}
@@ -708,6 +720,8 @@ export default function SessionPage() {
               navigate={navigate}
               onUploadSuccess={handleUploadSuccess}
               workflowPosition={session?.workflow_position ?? null}
+              isKickstarting={isKickstarting}
+              isReturning={isReturning}
             />
           ) : (
             <SessionArtifactPanel

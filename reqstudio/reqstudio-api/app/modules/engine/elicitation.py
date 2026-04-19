@@ -19,14 +19,42 @@ from collections.abc import AsyncGenerator
 from sqlalchemy import func, select
 
 from app.core.config import settings
-from app.core.exceptions import not_found_error
+from app.core.exceptions import (
+    not_found_error,
+    session_already_started_error,
+    session_not_paused_error,
+)
 from app.db.tenant import TenantScope
 from app.integrations.llm_client import CompletionChunk, stream_completion
 from app.modules.auth.models import User
 from app.modules.engine.context_builder import build_context
 from app.modules.projects.models import Project
-from app.modules.sessions.models import SESSION_STATUS_COMPLETED, Message, Session
-from app.modules.workflows.models import WorkflowStep
+from app.modules.sessions.models import (
+    SESSION_STATUS_ACTIVE,
+    SESSION_STATUS_COMPLETED,
+    SESSION_STATUS_PAUSED,
+    Message,
+    Session,
+)
+from app.modules.workflows.models import Agent, WorkflowStep
+from app.seeds.seed_workflows import (
+    COMPLETION_TEMPLATE as _COMPLETION_TEMPLATE,
+)
+from app.seeds.seed_workflows import (
+    KICKSTART_TEMPLATE as _KICKSTART_TEMPLATE,
+)
+from app.seeds.seed_workflows import (
+    RETURN_GREETING_TEMPLATE as _RETURN_GREETING_TEMPLATE,
+)
+from app.seeds.seed_workflows import (
+    RETURN_GREETING_TEMPLATE_NO_SUMMARIES as _RETURN_GREETING_TEMPLATE_NO_SUMMARIES,
+)
+from app.seeds.seed_workflows import (
+    STEP_NAMES as _STEP_NAMES,
+)
+from app.seeds.seed_workflows import (
+    TRANSITION_TEMPLATE as _TRANSITION_TEMPLATE,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -148,7 +176,193 @@ async def elicit(
         yield chunk
 
 
+async def kickstart(
+    scope: TenantScope,
+    session_id: str,
+) -> AsyncGenerator[CompletionChunk, None]:
+    """Gera a mensagem de abertura proativa da Mary (Story 7.1).
+
+    Deve ser chamado apenas em sessões sem mensagens (primeiro acesso).
+    NÃO avança workflow_position — kickstart não conta como par user+assistant.
+
+    Yields:
+        CompletionChunk com conteúdo parcial da IA.
+
+    Raises:
+        GuidedRecoveryError(404): sessão não encontrada / outro tenant
+        GuidedRecoveryError(409): sessão já possui mensagens (SESSION_ALREADY_STARTED)
+    """
+    # ── Step 1: Validar sessão ──
+    session = await scope.db.scalar(scope.where_id(Session, session_id))
+    if not session:
+        raise not_found_error("sessão")
+
+    # ── Step 2: Idempotência — só executa se sessão está vazia ──
+    next_idx = await _next_message_index(scope, session_id)
+    if next_idx != 0:
+        raise session_already_started_error()
+
+    # ── Step 3: Carregar system_prompt do agente ──
+    system_prompt = await _load_agent_system_prompt(scope.db, session.workflow_id)
+
+    # ── Step 4: Montar messages para kickstart ──
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": _KICKSTART_TEMPLATE},
+    ]
+
+    # ── Step 5: Stream LLM + Step 6: Persistir resposta completa ──
+    full_response = ""
+
+    try:
+        async for chunk in stream_completion(messages):
+            full_response += chunk.content
+
+            if chunk.done:
+                metrics = chunk.metrics if chunk.metrics else None
+                assistant_msg = Message(
+                    session_id=session_id,
+                    tenant_id=scope.tenant_id,
+                    role="assistant",
+                    content=full_response,
+                    message_index=0,
+                    input_tokens=metrics.input_tokens if metrics else None,
+                    output_tokens=metrics.output_tokens if metrics else None,
+                    cost_usd=metrics.cost_usd if metrics else None,
+                    latency_ms=metrics.latency_ms if metrics else None,
+                    model=metrics.model if metrics else None,
+                )
+                scope.db.add(assistant_msg)
+                await scope.db.commit()
+
+                logger.info(
+                    "Kickstart message persisted",
+                    extra={"session_id": session_id, "response_length": len(full_response)},
+                )
+
+            yield chunk
+    except Exception:
+        await scope.db.rollback()
+        raise
+
+
+async def return_greeting(
+    scope: TenantScope,
+    session_id: str,
+) -> AsyncGenerator[CompletionChunk, None]:
+    """Gera saudação de retorno ao projeto para sessão pausada (Story 7.3).
+
+    Muda status para active, gera greeting via LLM com contexto das etapas
+    já concluídas e persiste mensagem como role="assistant". Se o stream
+    falhar, o status é revertido para paused para evitar estado inconsistente.
+
+    Yields:
+        CompletionChunk com conteúdo parcial da IA.
+
+    Raises:
+        GuidedRecoveryError(404): sessão não encontrada / outro tenant
+        GuidedRecoveryError(409): sessão não está pausada (SESSION_NOT_PAUSED)
+    """
+    # ── Step 1: Validar sessão ──
+    session = await scope.db.scalar(scope.where_id(Session, session_id))
+    if not session:
+        raise not_found_error("sessão")
+
+    # ── Step 2: Verificar status == paused ──
+    if session.status != SESSION_STATUS_PAUSED:
+        raise session_not_paused_error()
+
+    # ── Step 3: Mudar status para active imediatamente ──
+    session.status = SESSION_STATUS_ACTIVE
+
+    # ── Step 4: Montar prompt com contexto das etapas concluídas ──
+    position = session.workflow_position or {}
+    summaries = position.get("step_summaries") or {}
+    current_step = position.get("current_step", 1)
+    next_step_name = _STEP_NAMES.get(current_step, "próxima etapa")
+
+    if summaries:
+        summary_lines = []
+        for k, v in sorted(summaries.items(), key=lambda x: _safe_int(x[0])):
+            step_num = _safe_int(k)
+            if step_num is not None and step_num in _STEP_NAMES:
+                summary_lines.append(f"- {_STEP_NAMES[step_num]}: {v}")
+        summaries_text = "\n".join(summary_lines)
+        context_block = f"Etapas já concluídas:\n{summaries_text}\n\n"
+        progress_instruction = (
+            "liste brevemente as etapas concluídas usando os resumos acima"
+        )
+        prompt = _RETURN_GREETING_TEMPLATE.format(
+            context_block=context_block,
+            progress_instruction=progress_instruction,
+            next_step_name=next_step_name,
+        )
+    else:
+        prompt = _RETURN_GREETING_TEMPLATE_NO_SUMMARIES.format(
+            next_step_name=next_step_name,
+        )
+
+    system_prompt = await _load_agent_system_prompt(scope.db, session.workflow_id)
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": prompt},
+    ]
+
+    # ── Step 5: Stream LLM + Step 6: Persistir resposta completa ──
+    full_response = ""
+
+    try:
+        async for chunk in stream_completion(messages):
+            full_response += chunk.content
+
+            if chunk.done:
+                metrics = chunk.metrics if chunk.metrics else None
+                assistant_msg = Message(
+                    session_id=session_id,
+                    tenant_id=scope.tenant_id,
+                    role="assistant",
+                    content=full_response,
+                    message_index=await _next_message_index(scope, session_id),
+                    input_tokens=metrics.input_tokens if metrics else None,
+                    output_tokens=metrics.output_tokens if metrics else None,
+                    cost_usd=metrics.cost_usd if metrics else None,
+                    latency_ms=metrics.latency_ms if metrics else None,
+                    model=metrics.model if metrics else None,
+                )
+                scope.db.add(assistant_msg)
+                await scope.db.commit()
+
+                logger.info(
+                    "Return greeting persisted",
+                    extra={"session_id": session_id, "response_length": len(full_response)},
+                )
+
+            yield chunk
+    except Exception:
+        # Reverter status para paused: estado consistente se stream falhou
+        await scope.db.rollback()
+        session_after_rollback = await scope.db.scalar(scope.where_id(Session, session_id))
+        if session_after_rollback and session_after_rollback.status == SESSION_STATUS_ACTIVE:
+            session_after_rollback.status = SESSION_STATUS_PAUSED
+            await scope.db.commit()
+        raise
+
+
 # ── Helpers internos ──────────────────────────────────────────────────────────
+
+
+async def _load_agent_system_prompt(db, workflow_id: str) -> str:
+    """Carrega o system_prompt do agente associado ao primeiro step do workflow."""
+    step = await db.scalar(
+        select(WorkflowStep)
+        .where(WorkflowStep.workflow_id == workflow_id)
+        .order_by(WorkflowStep.position.asc())
+    )
+    if not step:
+        return "Você é Mary, analista sênior de requisitos do ReqStudio."
+    agent = await db.scalar(select(Agent).where(Agent.id == step.agent_id))
+    _fallback = "Você é Mary, analista sênior de requisitos do ReqStudio."
+    return agent.system_prompt if agent else _fallback
 
 
 async def _next_message_index(scope: TenantScope, session_id: str) -> int:
@@ -163,15 +377,16 @@ async def _next_message_index(scope: TenantScope, session_id: str) -> int:
 
 
 async def _advance_workflow(scope: TenantScope, session: Session) -> None:
-    """Avança a posição do workflow se o step atual foi concluído.
+    """Avança a posição do workflow e gera mensagem de transição via LLM.
 
     Lógica MVP simplificada: cada par user+assistant = 1 step concluído.
-    V2: lógica condicional baseada na resposta da IA (ex: "coverage completa").
+    AC 4: o incremento de current_step é persistido ANTES da chamada LLM
+    de transição (commit atômico). Se o LLM falhar, o avanço permanece e o
+    erro propaga; o usuário pode reenviar para regenerar a mensagem.
     """
-    position = session.workflow_position or {"current_step": 1}
+    position = dict(session.workflow_position or {"current_step": 1})
     current_step = position.get("current_step", 1)
 
-    # Verificar se existe próximo step
     total_steps = (
         await scope.db.scalar(
             select(func.count())
@@ -181,23 +396,156 @@ async def _advance_workflow(scope: TenantScope, session: Session) -> None:
         or 0
     )
 
+    system_prompt = await _load_agent_system_prompt(scope.db, session.workflow_id)
+
     if current_step < total_steps:
-        position["current_step"] = current_step + 1
-        session.workflow_position = position
+        new_step = current_step + 1
+        new_position = dict(position)
+        new_position["current_step"] = new_step
+        session.workflow_position = new_position
+        await scope.db.commit()  # AC 4: estado atômico antes do LLM
+
+        transition_prompt = _TRANSITION_TEMPLATE.format(
+            completed_step_num=current_step,
+            completed_step_name=_STEP_NAMES.get(current_step, str(current_step)),
+            next_step_num=new_step,
+            next_step_name=_STEP_NAMES.get(new_step, str(new_step)),
+        )
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": transition_prompt},
+        ]
+        full_transition = ""
+        try:
+            async for chunk in stream_completion(messages):
+                full_transition += chunk.content
+        except Exception:
+            logger.exception(
+                "Transition LLM failed after step advance",
+                extra={"session_id": session.id, "new_step": new_step},
+            )
+            raise
+
+        summary = _extract_summary(full_transition)
+        summaries = dict(new_position.get("step_summaries") or {})
+        summaries[str(current_step)] = summary
+        updated_position = dict(new_position)
+        updated_position["step_summaries"] = summaries
+        session.workflow_position = updated_position
+
+        msg_index = await _next_message_index(scope, session.id)
+        transition_msg = Message(
+            session_id=session.id,
+            tenant_id=scope.tenant_id,
+            role="assistant",
+            content=_strip_summary_tag(full_transition),
+            message_index=msg_index,
+        )
+        scope.db.add(transition_msg)
+
         logger.info(
             "Workflow advanced",
-            extra={"session_id": session.id, "new_step": current_step + 1, "total": total_steps},
+            extra={"session_id": session.id, "new_step": new_step, "total": total_steps},
         )
+
     elif current_step >= total_steps:
-        # Último step — marcar sessão como completed
-        position["current_step"] = total_steps
-        position["completed"] = True
-        session.workflow_position = position
+        new_position = dict(position)
+        summaries = dict(new_position.get("step_summaries") or {})
+
+        summary_lines = []
+        for k, v in sorted(summaries.items(), key=lambda x: _safe_int(x[0]) or 0):
+            step_num = _safe_int(k)
+            label = _STEP_NAMES.get(step_num, k) if step_num is not None else k
+            summary_lines.append(f"Etapa {k} — {label}: {v}")
+        summaries_text = "\n".join(summary_lines)
+
+        completion_prompt = _COMPLETION_TEMPLATE.format(summaries_text=summaries_text)
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": completion_prompt},
+        ]
+        full_completion = ""
+        try:
+            async for chunk in stream_completion(messages):
+                full_completion += chunk.content
+        except Exception:
+            logger.exception(
+                "Completion LLM failed",
+                extra={"session_id": session.id, "current_step": current_step},
+            )
+            raise
+
+        summary = _extract_summary(full_completion)
+        summaries[str(current_step)] = summary
+        new_position["step_summaries"] = summaries
+        new_position["current_step"] = total_steps
+        new_position["completed"] = True
+
+        msg_index = await _next_message_index(scope, session.id)
+        completion_msg = Message(
+            session_id=session.id,
+            tenant_id=scope.tenant_id,
+            role="assistant",
+            content=_strip_summary_tag(full_completion),
+            message_index=msg_index,
+        )
+        scope.db.add(completion_msg)
+
+        session.workflow_position = new_position
         session.status = SESSION_STATUS_COMPLETED
+
         logger.info(
             "Workflow completed",
             extra={"session_id": session.id, "total_steps": total_steps},
         )
+
+
+def _safe_int(value) -> int | None:
+    try:
+        return int(value)
+    except (ValueError, TypeError):
+        return None
+
+
+def _normalize_summary_line(raw_line: str) -> str:
+    return raw_line.strip().strip("*").strip()
+
+
+_SUMMARY_TAG = "[RESUMO]:"
+_SUMMARY_MAX_CHARS = 200
+
+
+def _extract_summary(response: str) -> str:
+    """Extrai resumo de 1 linha da resposta do LLM (tag [RESUMO]:).
+
+    Robustez:
+    - Procura a tag em qualquer linha (não só a primeira)
+    - Tolera markdown de ênfase (**, *) ao redor da tag
+    - Limita o resumo a _SUMMARY_MAX_CHARS
+
+    Fallback: primeiros _SUMMARY_MAX_CHARS chars se tag ausente.
+    """
+    if not response or not response.strip():
+        return ""
+
+    for raw_line in response.splitlines():
+        normalized = _normalize_summary_line(raw_line)
+        if normalized.startswith(_SUMMARY_TAG):
+            return normalized[len(_SUMMARY_TAG):].strip()[:_SUMMARY_MAX_CHARS]
+
+    return response.strip()[:_SUMMARY_MAX_CHARS]
+
+
+def _strip_summary_tag(response: str) -> str:
+    """Remove a linha contendo [RESUMO]: para não vazar metadado ao usuário."""
+    if not response:
+        return response
+    kept = [
+        line
+        for line in response.splitlines()
+        if not _normalize_summary_line(line).startswith(_SUMMARY_TAG)
+    ]
+    return "\n".join(kept).rstrip()
 
 
 def _compute_progress_summary(workflow_position: dict | None) -> dict:

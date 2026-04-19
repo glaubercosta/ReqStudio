@@ -37,6 +37,204 @@ export type SSEEvent =
   | { type: 'error'; data: SSEError }
 
 /**
+ * Conecta ao endpoint SSE de kickstart e itera sobre os eventos (Story 7.1).
+ *
+ * @param sessionId  ID da sessão ativa
+ * @param onEvent    Callback para cada evento SSE
+ * @param signal     AbortSignal para cancelamento
+ */
+export async function streamKickstart(
+  sessionId: string,
+  onEvent: (event: SSEEvent) => void,
+  signal?: AbortSignal,
+): Promise<void> {
+  const createRequest = async () => {
+    const token = getAccessToken()
+    return fetch(`${API_BASE}/api/v1/sessions/${sessionId}/kickstart`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'text/event-stream',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({}),
+      credentials: 'include',
+      signal,
+    })
+  }
+
+  let res = await createRequest()
+
+  if (res.status === 401) {
+    const refreshed = await refreshAccessTokenOrNull()
+    if (refreshed) {
+      res = await createRequest()
+    } else {
+      setAccessToken(null)
+      window.dispatchEvent(new CustomEvent(AUTH_LOGOUT_EVENT))
+    }
+  }
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}))
+    onEvent({
+      type: 'error',
+      data: {
+        code: body?.error?.code ?? 'HTTP_ERROR',
+        message: body?.error?.message ?? res.statusText,
+      },
+    })
+    return
+  }
+
+  const reader = res.body?.getReader()
+  if (!reader) return
+
+  const decoder = new TextDecoder()
+  let buffer = ''
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+
+      buffer += decoder.decode(value, { stream: true })
+      const events = buffer.split('\n\n')
+      buffer = events.pop() ?? ''
+
+      for (const block of events) {
+        if (!block.trim()) continue
+
+        let eventType = 'message'
+        const dataLines: string[] = []
+
+        for (const line of block.split('\n')) {
+          if (line.startsWith('event: ')) {
+            eventType = line.slice(7)
+          } else if (line.startsWith('data: ')) {
+            dataLines.push(line.slice(6))
+          } else if (line.startsWith('data:')) {
+            // Per SSE spec, "data:" without space is also valid
+            dataLines.push(line.slice(5))
+          }
+        }
+
+        if (dataLines.length > 0) {
+          const data = dataLines.join('\n')
+          try {
+            const parsed = JSON.parse(data)
+            onEvent({ type: eventType as SSEEvent['type'], data: parsed })
+          } catch {
+            // Skip malformed JSON
+          }
+        }
+      }
+    }
+  } finally {
+    reader.releaseLock()
+  }
+}
+
+/**
+ * Conecta ao endpoint SSE de return-greeting e itera sobre os eventos (Story 7.3).
+ *
+ * @param sessionId  ID da sessão pausada
+ * @param onEvent    Callback para cada evento SSE
+ * @param signal     AbortSignal para cancelamento
+ */
+export async function streamReturnGreeting(
+  sessionId: string,
+  onEvent: (event: SSEEvent) => void,
+  signal?: AbortSignal,
+): Promise<void> {
+  const createRequest = async () => {
+    const token = getAccessToken()
+    return fetch(`${API_BASE}/api/v1/sessions/${sessionId}/return-greeting`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'text/event-stream',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({}),
+      credentials: 'include',
+      signal,
+    })
+  }
+
+  let res = await createRequest()
+
+  if (res.status === 401) {
+    const refreshed = await refreshAccessTokenOrNull()
+    if (refreshed) {
+      res = await createRequest()
+    } else {
+      setAccessToken(null)
+      window.dispatchEvent(new CustomEvent(AUTH_LOGOUT_EVENT))
+    }
+  }
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}))
+    onEvent({
+      type: 'error',
+      data: {
+        code: body?.error?.code ?? 'HTTP_ERROR',
+        message: body?.error?.message ?? res.statusText,
+      },
+    })
+    return
+  }
+
+  const reader = res.body?.getReader()
+  if (!reader) return
+
+  const decoder = new TextDecoder()
+  let buffer = ''
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+
+      buffer += decoder.decode(value, { stream: true })
+      const events = buffer.split('\n\n')
+      buffer = events.pop() ?? ''
+
+      for (const block of events) {
+        if (!block.trim()) continue
+
+        let eventType = 'message'
+        const dataLines: string[] = []
+
+        for (const line of block.split('\n')) {
+          if (line.startsWith('event: ')) {
+            eventType = line.slice(7)
+          } else if (line.startsWith('data: ')) {
+            dataLines.push(line.slice(6))
+          } else if (line.startsWith('data:')) {
+            // Per SSE spec, "data:" without space is also valid
+            dataLines.push(line.slice(5))
+          }
+        }
+
+        if (dataLines.length > 0) {
+          const data = dataLines.join('\n')
+          try {
+            const parsed = JSON.parse(data)
+            onEvent({ type: eventType as SSEEvent['type'], data: parsed })
+          } catch {
+            // Skip malformed JSON
+          }
+        }
+      }
+    }
+  } finally {
+    reader.releaseLock()
+  }
+}
+
+/**
  * Conecta ao endpoint SSE de elicitação e itera sobre os eventos.
  *
  * @param sessionId  ID da sessão ativa
@@ -119,17 +317,21 @@ export async function streamElicit(
         if (!block.trim()) continue
 
         let eventType = 'message'
-        let data = ''
+        const dataLines: string[] = []
 
         for (const line of block.split('\n')) {
           if (line.startsWith('event: ')) {
             eventType = line.slice(7)
           } else if (line.startsWith('data: ')) {
-            data = line.slice(6)
+            dataLines.push(line.slice(6))
+          } else if (line.startsWith('data:')) {
+            // Per SSE spec, "data:" without space is also valid
+            dataLines.push(line.slice(5))
           }
         }
 
-        if (data) {
+        if (dataLines.length > 0) {
+          const data = dataLines.join('\n')
           try {
             const parsed = JSON.parse(data)
             onEvent({ type: eventType as SSEEvent['type'], data: parsed })
