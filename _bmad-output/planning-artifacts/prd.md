@@ -1,9 +1,11 @@
 ---
 stepsCompleted: ['step-01-init', 'step-02-discovery', 'step-02b-vision', 'step-02c-executive-summary', 'step-03-success', 'step-04-journeys', 'step-05-domain', 'step-06-innovation', 'step-07-project-type', 'step-08-scoping', 'step-09-functional', 'step-10-nonfunctional', 'step-11-polish', 'step-12-complete']
-lastEdited: '2026-03-27'
+lastEdited: '2026-04-18'
 editHistory:
   - date: '2026-03-27'
     changes: 'Adição de FRs (42 FRs, 7 áreas) e NFRs (20 NFRs, 6 categorias). Polish: remoção de duplicação (Escopo do Produto), limpeza de implementation leakage residual, padronização terminológica.'
+  - date: '2026-04-18'
+    changes: 'Pós-MVP user testing: adição de FR43–FR47 (Engajamento e Acompanhamento de Progresso). Atualização de FR4, FR12, FR17. Jornadas J1 e J3 atualizadas para refletir abertura pelo agente, transições de etapa e painel de progresso lateral. Escopo MVP atualizado.'
 inputDocuments: ['product-brief.md']
 workflowType: 'prd'
 documentCounts:
@@ -104,9 +106,11 @@ O ReqStudio atinge sucesso quando o especialista de domínio:
 
 **Cena de abertura:** Ana foi incluída num projeto para digitalizar o processo de rastreamento de entregas. O CTO pediu pra ela "documentar o que precisa". Ela não sabe por onde começar.
 
-**Ação:** Recebe um convite por e-mail: "Você foi adicionada ao projeto 'Track&Trace' no ReqStudio." Clica, faz login, e vê uma tela limpa com uma pergunta simples: *"Descreva o problema que você quer resolver."*
+**Ação:** Recebe um convite por e-mail: "Você foi adicionada ao projeto 'Track&Trace' no ReqStudio." Clica, faz login, e abre o chat do projeto. A agente Mary se apresenta: *"Olá, Ana. Sou a Mary, analista de requisitos. Vamos trabalhar em 5 etapas para mapear tudo que o time técnico vai precisar: Contexto, Usuários, Objetivos, Processo atual e Restrições. Pode começar me contando o problema central que este projeto precisa resolver."* À esquerda do chat, um painel mostra as 5 etapas — todas esmaecidas, aguardando.
 
 **Escalada:** O ReqStudio guia Ana etapa por etapa — sem jargão. Pergunta sobre quem usa o sistema, quando, qual a dor, o que seria o ideal. Ana importa o SLA do contrato de entregas e a normativa regulatória do setor. A IA integra esses documentos como contexto e desafia: *"Seu SLA menciona 'atraso'. Quanto atraso é aceitável? O que acontece quando passa desse limite?"* Ana refina.
+
+**Momento de momentum:** Após a segunda etapa, Mary transiciona: *"Contexto e stakeholders mapeados. Agora quero entender o que define sucesso para este projeto."* O painel à esquerda acende as duas primeiras etapas — Ana clica numa delas e vê o resumo capturado. Pensa: *"isso está evoluindo de verdade."*
 
 **Clímax:** Ana termina a sessão, exporta o artefato e lê o documento não-técnico. Pensa: *"É exatamente isso. Se eu levar isso pra reunião, o time técnico vai entender."*
 
@@ -140,7 +144,7 @@ Ana responde guiada pela IA. Novos requisitos emergem. O artefato é **evoluído
 
 **Ação:** No dashboard do ReqStudio, Carla vê seus 5 projetos organizados. Muda do projeto "ClinicaPlus" pro projeto "RetailX" com um clique. Contexto muda completamente — agentes, histórico, artefatos. Zero contaminação.
 
-**Escalada:** No projeto RetailX, Carla retoma de onde parou na semana anterior. O ReqStudio mostra: *"Última sessão: PRD 60% completo. Pendente: Regras de promoção e estoque."* Carla importa a normativa fiscal relevante para o setor e continua sem perder contexto.
+**Escalada:** No projeto RetailX, Carla retoma de onde parou na semana anterior. Mary a recebe: *"Bem-vinda de volta, Carla. Na última sessão cobrimos Contexto, Usuários e Objetivos de negócio. A próxima etapa é Processo atual. Quer continuar ou revisitar algo já coberto?"* Carla responde continuar, importa a normativa fiscal relevante e segue sem perder contexto.
 
 **Clímax:** Ao exportar o PRD do RetailX, Carla baixa em Markdown para importar no Notion do cliente. O artefato não tem referência alguma ao cliente de saúde. Isolamento confirmado.
 
@@ -282,7 +286,7 @@ Projetos como containers de contexto isolados — a unidade de trabalho do ReqSt
 - FR1: Usuário pode criar projeto com nome, descrição e domínio de negócio
 - FR2: Usuário pode listar, acessar e alternar entre projetos ativos
 - FR3: Cada projeto mantém contexto isolado — artefatos, sessões e documentos de referência pertencem exclusivamente ao projeto
-- FR4: Ao retomar projeto, sistema apresenta resumo do progresso e próximos passos sugeridos
+- FR4: O painel do projeto exibe resumo visual do progresso (etapas concluídas, percentual) e próximos passos — visível na tela inicial do projeto, antes de entrar na sessão
 - FR5: Usuário pode arquivar projetos concluídos sem perda de dados
 - FR6: Zero vazamento de contexto entre projetos — verificável por auditoria
 
@@ -300,14 +304,24 @@ Documentos de referência como combustível de qualidade — quanto mais context
 
 O core do produto — sessão guiada que transforma conhecimento de domínio em requisitos estruturados.
 
-- FR12: Sistema conduz sessões de elicitação multi-etapa com agentes especializados, produzindo artefatos progressivamente (ver Arquitetura para decisões de motor de elicitação)
+- FR12: Sistema conduz sessões de elicitação multi-etapa com agentes especializados, produzindo artefatos progressivamente; o agente lidera a abertura e as transições de etapa (ver Arquitetura para decisões de motor de elicitação)
 - FR13: Sessão utiliza linguagem não-técnica — zero jargão de desenvolvimento, explicações em linguagem de negócio
 - FR14: IA identifica gaps nos requisitos e sugere cenários não cobertos proativamente
 - FR15: Usuário pode pausar sessão e retomá-la posteriormente sem perda de contexto
 - FR16: Quando documentos de referência estão disponíveis, sistema pode gerar proposta inicial de artefato para refinamento pelo usuário
-- FR17: Quando não há contexto prévio, sistema inicia sessão de descoberta guiada a partir do problema do usuário
+- FR17: No início do projeto (primeiro acesso ao chat), o agente inicia sessão de descoberta guiada a partir do problema do usuário
 - FR18: Cada etapa da sessão é validada pelo usuário antes de avançar — construção progressiva, não geração em lote
 - FR19: IA desafia respostas do usuário e solicita refinamento quando detecta ambiguidade ou generalização
+
+### Engajamento e Acompanhamento de Progresso
+
+Momentum visível — o usuário sente o trabalho evoluir em tempo real, etapa a etapa.
+
+- FR43: No início do projeto (primeiro acesso ao chat), o agente envia mensagem inicial apresentando-se, declarando o número e nome das etapas do processo e convidando o usuário a começar
+- FR44: Ao concluir cada etapa, o agente emite mensagem de transição declarando o que foi alcançado e anunciando o objetivo da próxima etapa — tom direto, sem bajulação
+- FR45: O agente gera e armazena um resumo de uma linha por etapa concluída no momento da transição
+- FR46: A interface da sessão exibe painel lateral de progresso recolhível contendo: estado visual das etapas (concluídas em cores intensas, pendentes em cores esmaecidas) e resumo por etapa concluída oculto por padrão e expansível com um clique
+- FR47: Ao retomar projeto em sessão existente, o agente envia greeting de retorno com: resumo das etapas concluídas, próxima etapa programada e opção para o usuário continuar ou revisitar etapa anterior
 
 ### Artefatos e Saída
 
@@ -356,7 +370,7 @@ Infraestrutura de confiança — pré-requisito para o produto existir, não fea
 
 | Fase | FRs Incluídos |
 |------|---------------|
-| **MVP** | FR1–FR25, FR38–FR40 (Contexto, Enriquecimento, Tradução, Artefatos, Auth básica) |
+| **MVP** | FR1–FR25, FR38–FR40, FR43–FR47 (Contexto, Enriquecimento, Tradução, Artefatos, Auth básica, Engajamento e Progresso) |
 | **Growth** | FR26–FR35, FR41–FR42 (Colaboração, Brownfield docs, RBAC) |
 | **Vision** | FR36–FR37 (Conexão a codebase, análise automática de código) |
 
@@ -423,6 +437,7 @@ Requisitos de qualidade seletivos — apenas categorias relevantes para o contex
 - Exportação de artefatos (Markdown, JSON)
 - Persistência de projetos e sessões (banco leve com isolamento por tenant)
 - UX não-técnica — linguagem de negócio, zero jargão
+- Engajamento e momentum: abertura de projeto pelo agente, transições de etapa sinalizadas, painel lateral de progresso recolhível, greeting de retorno ao projeto
 
 **Explicitamente fora do MVP:**
 - Colaboração stakeholder (Felipe+Ana) → Phase 2

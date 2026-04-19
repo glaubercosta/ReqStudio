@@ -1,9 +1,9 @@
 ---
 stepsCompleted: ['step-01-validate-prerequisites', 'step-02-design-epics', 'step-03-create-stories']
 inputDocuments: ['prd.md', 'architecture.md', 'ux-design-specification.md']
-totalEpics: 8
-totalStories: 39
-mvpStories: 31
+totalEpics: 9
+totalStories: 43
+mvpStories: 35
 growthStories: 8
 ---
 
@@ -11,7 +11,7 @@ growthStories: 8
 
 ## Overview
 
-This document provides the complete epic and story breakdown for ReqStudio, decomposing the requirements from the PRD, UX Design and Architecture requirements into implementable stories. Total: 8 epics, 39 stories. MVP: Epics 1-6 (31 stories). Growth/Vision: Epics 7-8 (8 stories).
+This document provides the complete epic and story breakdown for ReqStudio, decomposing the requirements from the PRD, UX Design and Architecture requirements into implementable stories. Total: 9 epics, 43 stories. MVP: Epics 1-7 (35 stories). Growth/Vision: Epics 8-9 (8 stories).
 
 ## Requirements Inventory
 
@@ -60,8 +60,9 @@ UX-DR1 (input adaptativa), UX-DR2 (ChatMessage), UX-DR3 (ArtifactCard), UX-DR4 (
 | FR7-FR8, FR11 | Epic 4 | Enriquecimento de Contexto |
 | FR9-FR10, FR12-FR19 | Epic 5 | Sessão de Elicitação |
 | FR20-FR25 | Epic 6 | Artefatos e Exportação |
-| FR26-FR31, FR41-FR42 | Epic 7 | Evolução Colaborativa |
-| FR32-FR37 | Epic 8 | Elicitação Brownfield |
+| FR43-FR47 | Epic 7 | Engajamento e Momentum |
+| FR26-FR31, FR41-FR42 | Epic 8 | Evolução Colaborativa |
+| FR32-FR37 | Epic 9 | Elicitação Brownfield |
 | FR38-FR40 | Epic 2 | Identidade e Acesso |
 
 ## Epic List
@@ -94,11 +95,16 @@ Action items críticos da Retro Epic 5 formalizados como pré-condições para o
 JSON canônico, rendering dual, cobertura, export MD/JSON, versionamento.
 **FRs cobertos:** FR20-FR25. **NFRs:** NFR3, NFR20.
 
-### Epic 7: Evolução Colaborativa (Growth)
+### Epic 7: Engajamento e Momentum — Pós-Testes com Usuários (MVP)
+
+Abertura de projeto pelo agente, transições de etapa sinalizadas, painel lateral de progresso, greeting de retorno.
+**FRs cobertos:** FR43-FR47.
+
+### Epic 8: Evolução Colaborativa (Growth)
 RBAC, publicação seletiva, feedback por seção, re-análise com IA, notificações.
 **FRs cobertos:** FR26-FR31, FR41-FR42.
 
-### Epic 8: Elicitação Brownfield (Growth/Vision)
+### Epic 9: Elicitação Brownfield (Growth/Vision)
 Import docs existentes, gap analysis, impacto, conexão repo.
 **FRs cobertos:** FR32-FR37.
 
@@ -838,11 +844,105 @@ So that eu verifique resultado final e baixe no formato certo.
 
 ---
 
-## Epic 7: Evolução Colaborativa (Growth)
+## Epic 7: Engajamento e Momentum — Pós-Testes com Usuários
+
+Abertura de projeto pelo agente, transições de etapa sinalizadas com resumo automático, painel lateral de progresso recolhível, greeting de retorno ao projeto.
+
+### Story 7.1: Kickstart de Projeto — Mensagem Inicial da Mary
+
+As a usuário que abre o chat de um projeto pela primeira vez,
+I want ver Mary se apresentar e explicar o processo de elicitação,
+So that eu entenda o que esperar e me sinta acolhido para começar (FR43).
+
+**Acceptance Criteria:**
+
+**Given** projeto sem histórico de mensagens (primeiro acesso ao chat)
+**When** usuário abre a tela de sessão
+**Then** backend auto-gera e persiste a mensagem inicial de Mary antes do primeiro turno do usuário
+**And** mensagem inclui: apresentação como Mary, número e nomes das 5 etapas, convite para começar
+**And** mensagem aparece no chat como role `assistant` com `message_index 0`
+**And** input de chat permanece desabilitado até mensagem ser exibida completamente
+
+**Given** sessão já com mensagens (retorno ao projeto)
+**When** usuário abre a tela de sessão
+**Then** nenhuma mensagem automática de abertura é gerada — apenas histórico exibido
+
+---
+
+### Story 7.2: Transição de Etapa e Resumo Automático
+
+As a usuário em sessão de elicitação,
+I want que Mary sinalize explicitamente quando uma etapa é concluída e qual vem a seguir,
+So that eu sinta o progresso e saiba o objetivo do próximo bloco (FR44, FR45).
+
+**Acceptance Criteria:**
+
+**Given** sessão em andamento com step N concluído
+**When** `_advance_workflow` executa (step N → step N+1)
+**Then** backend gera mensagem de transição como role `assistant` persistida na sessão
+**And** mensagem declara o que foi alcançado na etapa N e anuncia o objetivo da etapa N+1
+**And** tom é direto e energizante, sem bajulação
+**And** backend gera e armazena resumo de 1 linha da etapa N em `workflow_position.step_summaries[N]`
+
+**Given** etapa final (step 5) concluída
+**When** `_advance_workflow` marca `session.status = "completed"`
+**Then** mensagem de encerramento gerada (não transição, mas conclusão)
+**And** todas as 5 etapas têm entry em `step_summaries`
+
+---
+
+### Story 7.3: Greeting de Retorno ao Projeto
+
+As a usuário que retoma um projeto após pausa,
+I want que Mary me receba com contexto do que foi feito e o que vem a seguir,
+So that eu reoriente rapidamente e decida como prosseguir (FR47).
+
+**Acceptance Criteria:**
+
+**Given** sessão com status `paused` e `step_summaries` populado
+**When** usuário retoma sessão (status muda de `paused` → `active`)
+**Then** backend auto-gera mensagem de retorno de Mary persistida na sessão
+**And** mensagem inclui: saudação de retorno, etapas concluídas com seus resumos, próxima etapa programada
+**And** mensagem pergunta se o usuário deseja continuar ou revisitar etapa anterior
+**And** mensagem gerada e exibida antes de habilitar o input do usuário
+
+**Given** sessão retomada com `step_summaries` vazio (nenhuma etapa concluída ainda)
+**When** sessão retomada
+**Then** greeting simplificado: saudação de retorno + anúncio da primeira etapa + convite para continuar
+
+---
+
+### Story 7.4: Painel Lateral de Progresso da Sessão
+
+As a usuário em sessão de elicitação,
+I want visualizar o progresso das 5 etapas em tempo real no painel lateral,
+So that eu sinta o trabalho evoluir e consulte o que foi capturado em cada etapa (FR46).
+
+**Acceptance Criteria:**
+
+**Given** sessão ativa em qualquer etapa
+**When** painel de progresso exibido (estado expandido)
+**Then** 5 etapas listadas com seus nomes
+**And** etapas concluídas exibidas com cor intensa; pendentes com cor esmaecida; etapa atual destacada
+**And** para cada etapa concluída: resumo de 1 linha visível
+**And** clique no resumo expande o conteúdo completo da etapa (via `step_summaries`)
+
+**Given** painel no estado recolhido
+**When** usuário clica no botão de toggle
+**Then** painel expande com animação suave; clique novamente recolhe
+
+**Given** `step_summaries` atualizado pelo backend (nova etapa concluída)
+**When** frontend recebe evento SSE `done` com `workflow_position` atualizado
+**Then** painel atualiza automaticamente sem refresh de página
+**And** nova etapa muda visualmente de esmaecida para cor intensa
+
+---
+
+## Epic 8: Evolução Colaborativa (Growth)
 
 RBAC, publicação seletiva, feedback por seção, re-análise com IA, notificações.
 
-### Story 7.1: RBAC — Papéis e Permissões Diferenciadas
+### Story 8.1: RBAC — Papéis e Permissões Diferenciadas
 
 As a administrador,
 I want papéis diferenciados (Analista, Stakeholder, Admin),
@@ -857,7 +957,7 @@ So that cada usuário acesse apenas o permitido (FR42).
 **And** stakeholder tentando criar sessão → Guided Recovery `INSUFFICIENT_PERMISSIONS`
 **And** endpoints: convite por e-mail, listagem de membros
 
-### Story 7.2: Publicação Seletiva de Artefatos
+### Story 8.2: Publicação Seletiva de Artefatos
 
 As a Ana,
 I want controlar quais artefatos stakeholders veem,
@@ -871,7 +971,7 @@ So that eu publique quando confiante (FR41).
 **And** stakeholder lista → apenas published
 **And** PATCH requer role analyst
 
-### Story 7.3: Feedback e Dúvidas por Seção do Artefato
+### Story 8.3: Feedback e Dúvidas por Seção do Artefato
 
 As a Felipe,
 I want registrar dúvidas em seções específicas do artefato,
@@ -884,7 +984,7 @@ So that Ana saiba onde preciso esclarecimento (FR27).
 **And** Ana vê comentários, pode marcar "Resolvido"
 **And** endpoints: CRUD comments, filtro por seção
 
-### Story 7.4: Re-análise Assistida por IA a partir de Feedback
+### Story 8.4: Re-análise Assistida por IA a partir de Feedback
 
 As a Ana,
 I want iniciar re-análise focada no ponto levantado,
@@ -898,7 +998,7 @@ So that eu aprofunde requisitos sem recomeçar (FR28, FR29).
 **And** IA abre com resumo do comentário + perguntas direcionadas
 **And** artefato evoluído incrementalmente, nova versão com referência ao comentário (FR30)
 
-### Story 7.5: Notificações de Atualização de Artefatos
+### Story 8.5: Notificações de Atualização de Artefatos
 
 As a Felipe,
 I want ser notificado quando artefatos atualizam,
@@ -914,11 +1014,11 @@ So that eu fique informado sem verificar manualmente (FR31).
 
 ---
 
-## Epic 8: Elicitação Brownfield (Growth/Vision)
+## Epic 9: Elicitação Brownfield (Growth/Vision)
 
 Import docs existentes, gap analysis, impacto, conexão repo.
 
-### Story 8.1: Importação de Documentação de Projeto Existente
+### Story 9.1: Importação de Documentação de Projeto Existente
 
 As a Ana,
 I want importar documentação técnica de projeto existente,
@@ -931,7 +1031,7 @@ So that a IA entenda o que já existe (FR32).
 **Then** parseados e chunked (reutiliza Epic 4), sumário automático gerado
 **And** tag document_category: brownfield_docs
 
-### Story 8.2: Elicitação Focada em Gaps e Análise de Impacto
+### Story 9.2: Elicitação Focada em Gaps e Análise de Impacto
 
 As a Ana,
 I want que a sessão foque nos gaps entre existente e desejado,
@@ -945,7 +1045,7 @@ So that eu não repita requisitos e identifique impactos (FR33, FR34).
 **And** impacto detectado → IA sinaliza proativamente (FR34)
 **And** artefato inclui seções "Áreas de Impacto" e "Requisitos Preservados" (FR35)
 
-### Story 8.3: Conexão a Repositório de Código (Vision)
+### Story 9.3: Conexão a Repositório de Código (Vision)
 
 As a Ana,
 I want conectar repositório de código do projeto,
