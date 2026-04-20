@@ -6,6 +6,8 @@ Uses SettingsConfigDict (Pydantic v2) — NOT legacy class Config.
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+_JWT_PLACEHOLDER = "change-me-in-production-use-openssl-rand-hex-32"
+
 
 class Settings(BaseSettings):
     """ReqStudio API configuration.
@@ -37,7 +39,7 @@ class Settings(BaseSettings):
     FRONTEND_PORT: int = 5173
 
     # --- JWT ---
-    JWT_SECRET_KEY: str = "change-me-in-production-use-openssl-rand-hex-32"
+    JWT_SECRET_KEY: str = _JWT_PLACEHOLDER
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
@@ -54,6 +56,21 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         extra="ignore",
     )
+
+    def validate_production_secrets(self) -> None:
+        """Reject insecure defaults when not in DEBUG/TESTING mode.
+
+        Called explicitly from app startup (create_app) — NOT at import time,
+        so test imports without env vars don't blow up.
+        """
+        if self.DEBUG or self.TESTING:
+            return
+        if self.JWT_SECRET_KEY == _JWT_PLACEHOLDER:
+            raise SystemExit(
+                "FATAL: JWT_SECRET_KEY is still the default placeholder. "
+                "Set a strong random key via environment variable: "
+                "export JWT_SECRET_KEY=$(openssl rand -hex 32)"
+            )
 
 
 settings = Settings()

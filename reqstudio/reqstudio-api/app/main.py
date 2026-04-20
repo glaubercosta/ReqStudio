@@ -41,6 +41,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:  # noqa: ARG001
 def create_app() -> FastAPI:
     """Create and configure the FastAPI application."""
 
+    # Reject insecure defaults in production (no-op in DEBUG/TESTING)
+    settings.validate_production_secrets()
+
     # Telemetria e logging estruturado antes de tudo
     setup_telemetry()
 
@@ -72,8 +75,8 @@ def create_app() -> FastAPI:
         CORSMiddleware,
         allow_origins=origins,
         allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
+        allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+        allow_headers=["Authorization", "Content-Type", "X-Request-ID", "Accept"],
     )
 
     from app.modules.artifacts.router import router as artifacts_router
