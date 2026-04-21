@@ -100,23 +100,15 @@ export async function request<T>(
   try {
     body = await res.json()
   } catch {
-    if (!res.ok) {
-      throw new ReqStudioApiError(
-        {
-          code: 'NETWORK_ERROR',
-          message: `Erro de comunicação com o servidor (HTTP ${res.status}).`,
-          help: 'O servidor retornou uma resposta inesperada. Tente novamente em alguns segundos.',
-          actions: [{ label: 'Tentar novamente', action: 'retry' }],
-          severity: 'recoverable',
-        },
-        res.status,
-      )
+    if (res.ok) {
+      // 204 No Content or other successful responses with no body
+      return {} as T
     }
     throw new ReqStudioApiError(
       {
-        code: 'UNEXPECTED_RESPONSE',
-        message: 'Resposta inesperada do servidor.',
-        help: 'O servidor retornou dados em formato não reconhecido.',
+        code: 'NETWORK_ERROR',
+        message: `Erro de comunicação com o servidor (HTTP ${res.status}).`,
+        help: 'O servidor retornou uma resposta inesperada. Tente novamente em alguns segundos.',
         actions: [{ label: 'Tentar novamente', action: 'retry' }],
         severity: 'recoverable',
       },
