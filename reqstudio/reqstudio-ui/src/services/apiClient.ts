@@ -112,17 +112,27 @@ export async function request<T>(
         res.status,
       )
     }
-    throw new Error('Resposta inesperada do servidor.')
-  }
-  if (!res.ok) {
     throw new ReqStudioApiError(
-      body.error as ApiError ?? {
-        code: 'UNKNOWN_ERROR',
-        message: `Erro inesperado (HTTP ${res.status}).`,
-        help: 'Tente novamente.',
-        actions: [],
+      {
+        code: 'UNEXPECTED_RESPONSE',
+        message: 'Resposta inesperada do servidor.',
+        help: 'O servidor retornou dados em formato não reconhecido.',
+        actions: [{ label: 'Tentar novamente', action: 'retry' }],
         severity: 'recoverable',
       },
+      res.status,
+    )
+  }
+  if (!res.ok) {
+    const fallback: ApiError = {
+      code: 'UNKNOWN_ERROR',
+      message: `Erro inesperado (HTTP ${res.status}).`,
+      help: 'Tente novamente.',
+      actions: [],
+      severity: 'recoverable',
+    }
+    throw new ReqStudioApiError(
+      { ...fallback, ...(body.error as Partial<ApiError>) },
       res.status,
     )
   }
