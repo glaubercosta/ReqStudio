@@ -71,11 +71,16 @@ def create_app() -> FastAPI:
         async def _rate_limit_handler(request: Request, exc: RateLimitExceeded) -> JSONResponse:
             err = rate_limit_error()
             request_id = getattr(request.state, "request_id", "unknown")
-            return JSONResponse(
+            response = JSONResponse(
                 status_code=err.status_code,
                 content=err.to_dict(),
                 headers={"X-Request-ID": request_id},
             )
+            # Preserve Retry-After and X-RateLimit-* headers from slowapi
+            view_rate_limit = getattr(request.state, "view_rate_limit", None)
+            if view_rate_limit:
+                limiter._inject_headers(response, view_rate_limit)
+            return response
 
         app.add_exception_handler(RateLimitExceeded, _rate_limit_handler)
         logger.info("Rate limiting enabled via slowapi")
