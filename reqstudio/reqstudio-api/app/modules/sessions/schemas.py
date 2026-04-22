@@ -8,7 +8,6 @@ from pydantic import BaseModel, Field
 from app.modules.sessions.models import VALID_MESSAGE_ROLES, VALID_SESSION_STATUSES
 from app.schemas.response import PaginatedList
 
-
 # ── Session Schemas ───────────────────────────────────────────────────────────
 
 
