@@ -6,6 +6,7 @@ from typing import Any
 from pydantic import BaseModel, Field
 
 from app.modules.projects.models import VALID_STATUSES
+from app.schemas.response import PaginatedList
 
 
 class ProjectCreate(BaseModel):
@@ -40,9 +41,5 @@ class ProjectResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
-class ProjectListResponse(BaseModel):
-    items: list[ProjectResponse]
-    total: int
-    page: int
-    size: int
-    pages: int
+# Backward-compatible alias — existing routers reference this name.
+ProjectListResponse = PaginatedList[ProjectResponse]
