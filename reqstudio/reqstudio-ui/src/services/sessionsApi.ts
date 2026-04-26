@@ -8,6 +8,7 @@
  */
 
 import { request } from './apiClient'
+import type { PaginatedList } from './types'
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -37,12 +38,7 @@ export interface Message {
 }
 
 interface SessionListResponse {
-  data: {
-    items: Session[]
-    total: number
-    page: number
-    size: number
-  }
+  data: PaginatedList<Session>
 }
 
 interface SessionResponse {
@@ -50,12 +46,7 @@ interface SessionResponse {
 }
 
 interface MessageListResponse {
-  data: {
-    items: Message[]
-    total: number
-    page: number
-    size: number
-  }
+  data: PaginatedList<Message>
 }
 
 // ── API ──────────────────────────────────────────────────────────────────────

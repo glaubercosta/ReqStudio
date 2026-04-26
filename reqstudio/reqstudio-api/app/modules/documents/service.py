@@ -98,9 +98,7 @@ async def upload_document(
     """Valida, persiste e parseia um documento de referência."""
 
     # 1. Projeto existe e pertence ao tenant
-    project = await scope.db.scalar(scope.where_id(Project, project_id))
-    if not project:
-        raise not_found_error("projeto")
+    await scope.get_or_404(Project, project_id, "projeto")
 
     # 2. Tamanho
     if len(content) > MAX_UPLOAD_BYTES:
@@ -162,9 +160,7 @@ async def list_documents(
     project_id: str,
 ) -> DocumentListResponse:
     # Valida projeto
-    project = await scope.db.scalar(scope.where_id(Project, project_id))
-    if not project:
-        raise not_found_error("projeto")
+    await scope.get_or_404(Project, project_id, "projeto")
 
     # Busca documentos com contagem de chunks via subquery
     stmt = scope.select(Document, Document.project_id == project_id)
@@ -194,9 +190,7 @@ async def delete_document(
     document_id: str,
 ) -> None:
     # Valida projeto
-    project = await scope.db.scalar(scope.where_id(Project, project_id))
-    if not project:
-        raise not_found_error("projeto")
+    await scope.get_or_404(Project, project_id, "projeto")
 
     doc = await scope.db.scalar(
         scope.select(Document, Document.id == document_id, Document.project_id == project_id)

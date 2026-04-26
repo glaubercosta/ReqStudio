@@ -4,6 +4,7 @@
  */
 
 import { request } from './apiClient'
+import type { PaginatedList } from './types'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -19,13 +20,7 @@ export interface Project {
   updated_at: string
 }
 
-export interface ProjectListData {
-  items: Project[]
-  total: number
-  page: number
-  size: number
-  pages: number
-}
+export type ProjectListData = PaginatedList<Project>
 
 export interface CreateProjectPayload {
   name: string
