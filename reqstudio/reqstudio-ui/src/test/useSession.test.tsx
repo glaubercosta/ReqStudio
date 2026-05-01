@@ -39,6 +39,8 @@ function makeWrapper() {
   )
 }
 
+type SessionStatus = 'active' | 'paused' | 'completed'
+
 function activeSession() {
   return {
     data: {
@@ -47,7 +49,7 @@ function activeSession() {
       tenant_id: 't-1',
       workflow_id: 'w-1',
       workflow_position: { current_step: 1 },
-      status: 'active' as const,
+      status: 'active' as SessionStatus,
       artifact_state: null,
       message_count: 0,
       created_at: '2026-05-01T00:00:00Z',
@@ -58,7 +60,7 @@ function activeSession() {
 
 function pausedSession() {
   const s = activeSession()
-  s.data.status = 'paused' as const
+  s.data.status = 'paused'
   return s
 }
 
