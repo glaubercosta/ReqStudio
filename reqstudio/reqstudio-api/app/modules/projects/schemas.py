@@ -41,5 +41,8 @@ class ProjectResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
-# Backward-compatible alias — existing routers reference this name.
-ProjectListResponse = PaginatedList[ProjectResponse]
+# Subclass (not alias) so the OpenAPI schema name stays `ProjectListResponse`
+# instead of becoming `PaginatedList[ProjectResponse]`, which would break any
+# external client doing codegen against /openapi.json.
+class ProjectListResponse(PaginatedList[ProjectResponse]):
+    pass

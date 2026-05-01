@@ -40,8 +40,10 @@ class SessionResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
-# Backward-compatible alias — existing routers reference this name.
-SessionListResponse = PaginatedList[SessionResponse]
+# Subclass (not alias) so the OpenAPI schema name stays `SessionListResponse`
+# instead of becoming `PaginatedList[SessionResponse]`.
+class SessionListResponse(PaginatedList[SessionResponse]):
+    pass
 
 
 # ── Message Schemas ───────────────────────────────────────────────────────────
@@ -74,5 +76,7 @@ class MessageResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
-# Backward-compatible alias — existing routers reference this name.
-MessageListResponse = PaginatedList[MessageResponse]
+# Subclass (not alias) so the OpenAPI schema name stays `MessageListResponse`
+# instead of becoming `PaginatedList[MessageResponse]`.
+class MessageListResponse(PaginatedList[MessageResponse]):
+    pass
