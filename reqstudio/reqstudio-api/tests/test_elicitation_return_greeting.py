@@ -231,6 +231,55 @@ async def test_return_greeting_sessao_nao_pausada_retorna_409(
 
 
 @pytest.mark.asyncio
+async def test_return_greeting_llm_failure_reverts_status_to_paused(
+    client: AsyncClient, tenant_a_token, seed_workflows
+):
+    """Se o stream LLM falhar mid-flight, status é revertido para 'paused' e nenhuma msg persiste.
+
+    Cobre o rollback path em elicitation.return_greeting:341-348 que existe para
+    evitar deixar a sessão presa em 'active' sem a mensagem de greeting persistida.
+    """
+    from sqlalchemy import select
+
+    from app.db.session import get_db
+    from app.db.tenant import TenantScope
+    from app.main import app
+    from app.modules.engine.elicitation import return_greeting
+    from app.modules.sessions.models import Session
+
+    project = await _create_project(client, tenant_a_token)
+    session_data = await _create_session(client, tenant_a_token, project["id"])
+    session_id = session_data["id"]
+    await _pause_session(client, tenant_a_token, session_id)
+
+    async def _failing_stream(*args, **kwargs):
+        # Yield one chunk so the engine has progressed past the status flip,
+        # then raise to simulate a mid-stream LLM failure.
+        yield CompletionChunk(content="Bem-vindo ", done=False)
+        raise RuntimeError("simulated LLM provider outage")
+
+    with patch(_PATCH_STREAM, side_effect=_failing_stream):
+        async for db in app.dependency_overrides[get_db]():
+            scope = TenantScope(db=db, tenant_id=tenant_a_token["tenant_id"])
+            with pytest.raises(RuntimeError, match="simulated LLM provider outage"):
+                async for _ in return_greeting(scope, session_id):
+                    pass
+
+    # Status revertido para 'paused' (não ficou 'active' sem mensagem)
+    async for db in app.dependency_overrides[get_db]():
+        sess = await db.scalar(select(Session).where(Session.id == session_id))
+        assert sess is not None
+        assert sess.status == "paused"
+
+    # Nenhuma mensagem assistant persistida
+    res = await client.get(
+        f"/api/v1/sessions/{session_id}/messages",
+        headers=_auth(tenant_a_token),
+    )
+    assert len(res.json()["data"]["items"]) == 0
+
+
+@pytest.mark.asyncio
 async def test_return_greeting_sessao_nao_encontrada(
     client: AsyncClient, tenant_a_token, seed_workflows
 ):

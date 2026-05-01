@@ -184,17 +184,38 @@ describe('streamElicit', () => {
     }
   })
 
-  it('handles empty body gracefully', async () => {
+  it('emits NO_RESPONSE_BODY error when response body is null', async () => {
     const mock = vi.fn().mockResolvedValue({
       ok: true,
       status: 200,
       body: null,
     })
     vi.stubGlobal('fetch', mock)
-    const onEvent = vi.fn()
+    const events: SSEEvent[] = []
+    const onEvent = vi.fn((e: SSEEvent) => events.push(e))
 
-    // Should not throw
     await streamElicit('s1', 'Hello', onEvent)
-    expect(onEvent).not.toHaveBeenCalled()
+
+    expect(events).toHaveLength(1)
+    expect(events[0].type).toBe('error')
+    if (events[0].type === 'error') {
+      expect(events[0].data.code).toBe('NO_RESPONSE_BODY')
+    }
+  })
+
+  it('parses SSE events delimited by CRLFCRLF (Windows/proxy line endings)', async () => {
+    const sseData =
+      'event: message\r\ndata: {"content":"Olá","done":false}\r\n\r\n' +
+      'event: done\r\ndata: {"content":"","done":true}\r\n\r\n'
+    stubFetchWithSSE([sseData])
+    const events: SSEEvent[] = []
+    const onEvent = vi.fn((e: SSEEvent) => events.push(e))
+
+    await streamElicit('s1', 'Hello', onEvent)
+
+    expect(events.map((e) => e.type)).toEqual(['message', 'done'])
+    if (events[0].type === 'message') {
+      expect(events[0].data.content).toBe('Olá')
+    }
   })
 })

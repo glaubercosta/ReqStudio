@@ -134,7 +134,9 @@ export function useSession({ sessionId }: UseSessionOptions) {
     if (messages.length > 0) return
     if (isKickstarting || kickstartDoneRef.current) return
 
-    kickstartDoneRef.current = true
+    // ref is set to true ONLY in the 'done' branch, so an abort/error during
+    // the first effect run (typical in React Strict Mode) leaves it false and
+    // the effect can re-fire on the second mount instead of being silently blocked.
     const abortCtrl = new AbortController()
 
     queueMicrotask(() => {
@@ -150,6 +152,7 @@ export function useSession({ sessionId }: UseSessionOptions) {
           isStreaming: true,
         }))
       } else if (event.type === 'done') {
+        kickstartDoneRef.current = true
         setStreamingMessage(null)
         setIsKickstarting(false)
         queryClient.invalidateQueries({ queryKey: ['messages', sessionId] })
@@ -188,7 +191,8 @@ export function useSession({ sessionId }: UseSessionOptions) {
     if (sessionTimedOut) return
     if (isReturning || returnGreetingDoneRef.current) return
 
-    returnGreetingDoneRef.current = true
+    // ref is set to true ONLY in the 'done' branch — see kickstart effect above
+    // for the rationale (React Strict Mode compatibility).
     const abortCtrl = new AbortController()
 
     queueMicrotask(() => {
@@ -204,6 +208,7 @@ export function useSession({ sessionId }: UseSessionOptions) {
           isStreaming: true,
         }))
       } else if (event.type === 'done') {
+        returnGreetingDoneRef.current = true
         setStreamingMessage(null)
         setIsReturning(false)
         queryClient.invalidateQueries({ queryKey: ['messages', sessionId] })
