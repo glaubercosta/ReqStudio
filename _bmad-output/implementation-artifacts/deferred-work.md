@@ -28,11 +28,11 @@
 ## Deferred from: code review of Epic 7 stories 7.1/7.2/7.3 (2026-04-19)
 
 - [ ] [Review][Patch-deferred] Race condition `kickstart`: dois requests concorrentes passam check `_next_message_index == 0` e gravam `message_index=0` duplicado — requer SELECT FOR UPDATE no Session ou unique constraint em (session_id, message_index) [elicitation.py:122-168] — adiado por exigir migration
-- [ ] [Review][Patch-deferred] Frontend kickstart: AbortController não propaga para backend; SSE generator continua até próximo yield, pode persistir após unmount [useSession.ts:706-759, 786-810]
-- [ ] [Review][Patch-deferred] React Strict Mode + ref pattern (`kickstartDoneRef`/`returnGreetingDoneRef`): primeiro abort cancela fetch enquanto ref já marcado, bloqueando retry; reset ref em error/abort [useSession.ts:720-749, 778-810]
-- [ ] [Review][Patch-deferred] AC 6 (7.1) e AC 5 (7.3): testes de componente faltando para `isKickstarting`/`isReturning` UI gating
-- [ ] [Review][Patch-deferred] Teste explícito de revert de `status` para `paused` em LLM failure no return_greeting [test_elicitation_return_greeting.py]
-- [ ] [Review][Patch-deferred] SSE client: split por `\n\n` apenas (CRLF quebra) e `res.body` null sem fallback [sseClient.ts] — multi-line `data:` já corrigido
+- [ ] [Review][Patch-deferred] Frontend kickstart: AbortController não propaga para backend; SSE generator continua até próximo yield, pode persistir após unmount [useSession.ts:706-759, 786-810] — adiado por exigir integração `request.is_disconnected()` no FastAPI generator (mudança arquitetural)
+- [x] [Review][Patch-deferred] React Strict Mode + ref pattern (`kickstartDoneRef`/`returnGreetingDoneRef`) — fechado em 2026-05-01: ref agora só é setado no handler de `done`; abort/erro deixa ref como `false`, permitindo re-fire na segunda mount do Strict Mode
+- [x] [Review][Patch-deferred] AC 6 (7.1) e AC 5 (7.3): testes de componente para `isKickstarting`/`isReturning` UI gating — fechado em 2026-05-01 via `src/test/useSession.test.tsx`
+- [x] [Review][Patch-deferred] Teste explícito de revert de `status` para `paused` em LLM failure no return_greeting — fechado em 2026-05-01: `test_return_greeting_llm_failure_reverts_status_to_paused`
+- [x] [Review][Patch-deferred] SSE client: split por `\n\n` apenas (CRLF quebra) e `res.body` null sem fallback — fechado em 2026-05-01: helper `parseSseStream` usa `\r?\n\r?\n` / `\r?\n`; body null emite `NO_RESPONSE_BODY` error event
 - [ ] [Review][Defer] Pause-on-unmount stale closure em `session.status` pode causar PATCH redundante [useSession.ts:811-824] — edge case de baixo impacto
 - [ ] [Review][Defer] ChatInput disabled durante kickstart sem botão de cancelar; usuário sem saída em LLM hang [SessionPage.tsx:308-318] — melhoria UX
 - [ ] [Review][Defer] Engine importa de `app.seeds.seed_workflows` (6 imports separados após ruff): cheiro arquitetural, mover templates para módulo `prompts` próprio [elicitation.py:75-96] — refatoração não-bloqueante

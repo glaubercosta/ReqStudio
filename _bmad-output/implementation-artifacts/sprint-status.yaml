@@ -133,7 +133,7 @@ development_status:
   # ═══════════════════════════════════════════════════
   epic-7: in-progress
   7-1-kickstart-projeto-mensagem-inicial-mary: review
-  7-2-transicao-etapa-resumo-automatico: review
+  7-2-transicao-etapa-resumo-automatico: done
   7-3-greeting-retorno-projeto: review
   7-4-painel-lateral-progresso-sessao: ready-for-dev
   epic-7-retrospective: optional

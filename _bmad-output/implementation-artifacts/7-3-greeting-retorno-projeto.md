@@ -233,12 +233,12 @@ claude-sonnet-4-6 (Amelia — bmad-agent-dev)
 ### Review Findings
 
 - [x] [Review][Patch] `session.status = SESSION_STATUS_ACTIVE` é setado antes do LLM stream; se stream falha, sem rollback explícito (status pode ficar dirty na sessão sem msg persistida) [elicitation.py:197-260] — aplicado: `try/except` envolve o stream; em falha, faz `rollback()`, recarrega session e reverte `status` para `PAUSED` se ainda estiver `ACTIVE`
-- [ ] [Review][Patch] AC 5: testes de componente faltando para `isReturning` UI gating (Task 5 marcada [x] mas sem coverage frontend) [reqstudio-ui/src/tests/]
+- [x] [Review][Patch] AC 5: testes de componente faltando para `isReturning` UI gating (Task 5 marcada [x] mas sem coverage frontend) [reqstudio-ui/src/tests/] — fechado em 2026-05-01: `src/test/useSession.test.tsx` cobre flip true/false do `isReturning` em sessão pausada
 - [x] [Review][Patch] Endpoint `return_greeting_stream`: bare `except Exception as e` + `str(e)` vaza internals; sem logging de traceback [router.py:547-555] — aplicado via helper compartilhado `_sse_error_payload`
-- [ ] [Review][Patch] Sem teste para revert de `status` em LLM failure (depende do fix do rollback acima) [test_elicitation_return_greeting.py]
+- [x] [Review][Patch] Sem teste para revert de `status` em LLM failure (depende do fix do rollback acima) [test_elicitation_return_greeting.py] — fechado em 2026-05-01: `test_return_greeting_llm_failure_reverts_status_to_paused`
 - [x] [Review][Patch] `step_summaries` com chave não-numérica corrompida → `int(k)` raise ValueError no comprehension; quebra greeting completamente [elicitation.py:206-211] — aplicado via helper `_safe_int()` (return_greeting + completion sort key)
-- [ ] [Review][Patch] Frontend: AbortController abort não propaga para backend; SSE generator continua até próximo yield, pode persistir após unmount [useSession.ts:786-810]
-- [ ] [Review][Patch] React Strict Mode + `returnGreetingDoneRef`: primeiro abort cancela fetch enquanto ref já marcado; bloqueia retry [useSession.ts:778-810]
-- [ ] [Review][Patch] SSE client `streamReturnGreeting`: split por `\n\n` apenas (CRLF quebra); single `data:` por bloco; `res.body` null sem fallback [sseClient.ts:1028-1114] — parcial: multi-line `data:` agora concatena linhas antes do `JSON.parse` (todos os 3 handlers); CRLF e `res.body` null permanecem follow-up
+- [ ] [Review][Patch] Frontend: AbortController abort não propaga para backend; SSE generator continua até próximo yield, pode persistir após unmount [useSession.ts:786-810] — adiado para `deferred-work.md` (requer integração `request.is_disconnected()` no FastAPI generator)
+- [x] [Review][Patch] React Strict Mode + `returnGreetingDoneRef`: primeiro abort cancela fetch enquanto ref já marcado; bloqueia retry [useSession.ts:778-810] — aplicado em 2026-05-01: `returnGreetingDoneRef.current = true` movido pro handler de `done`
+- [x] [Review][Patch] SSE client `streamReturnGreeting`: split por `\n\n` apenas (CRLF quebra); single `data:` por bloco; `res.body` null sem fallback [sseClient.ts:1028-1114] — fechado em 2026-05-01: helper `parseSseStream` extraído com `\r?\n\r?\n`/`\r?\n`; body null emite evento `NO_RESPONSE_BODY`
 - [x] [Review][Patch] Parâmetro `user_name` aceito em `return_greeting()` mas nunca usado [elicitation.py:191] — removido da assinatura; router.py atualizado
 - [x] [Review][Defer] SSE client: eventos com nomes desconhecidos (ping/keepalive) silenciosamente descartados [sseClient.ts:1009] — deferred, backend não emite estes hoje

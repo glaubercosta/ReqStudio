@@ -1,6 +1,6 @@
 # Story 7.2: Transição de Etapa e Resumo Automático
 
-Status: review
+Status: done
 
 ## Story
 

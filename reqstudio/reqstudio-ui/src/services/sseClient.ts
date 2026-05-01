@@ -36,6 +36,72 @@ export type SSEEvent =
   | { type: 'done'; data: SSEChunk }
   | { type: 'error'; data: SSEError }
 
+// SSE event delimiter is two consecutive line breaks; line-end may be LF or CRLF
+// (per spec). The previous implementation split only on `\n\n`, which silently
+// dropped events on servers/proxies that emit CRLF.
+const SSE_EVENT_SEPARATOR = /\r?\n\r?\n/
+const SSE_LINE_SEPARATOR = /\r?\n/
+
+async function parseSseStream(
+  body: ReadableStream<Uint8Array>,
+  onEvent: (event: SSEEvent) => void,
+): Promise<void> {
+  const reader = body.getReader()
+  const decoder = new TextDecoder()
+  let buffer = ''
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+
+      buffer += decoder.decode(value, { stream: true })
+      const events = buffer.split(SSE_EVENT_SEPARATOR)
+      buffer = events.pop() ?? ''
+
+      for (const block of events) {
+        if (!block.trim()) continue
+
+        let eventType = 'message'
+        const dataLines: string[] = []
+
+        for (const line of block.split(SSE_LINE_SEPARATOR)) {
+          if (line.startsWith('event: ')) {
+            eventType = line.slice(7)
+          } else if (line.startsWith('data: ')) {
+            dataLines.push(line.slice(6))
+          } else if (line.startsWith('data:')) {
+            // Per SSE spec, "data:" without space is also valid
+            dataLines.push(line.slice(5))
+          }
+        }
+
+        if (dataLines.length > 0) {
+          const data = dataLines.join('\n')
+          try {
+            const parsed = JSON.parse(data)
+            onEvent({ type: eventType as SSEEvent['type'], data: parsed })
+          } catch {
+            console.warn(`[SSE] Malformed JSON in event "${eventType}", data length: ${data.length}`)
+          }
+        }
+      }
+    }
+  } finally {
+    reader.releaseLock()
+  }
+}
+
+function emitNoBodyError(onEvent: (event: SSEEvent) => void): void {
+  onEvent({
+    type: 'error',
+    data: {
+      code: 'NO_RESPONSE_BODY',
+      message: 'Servidor retornou resposta sem conteúdo.',
+    },
+  })
+}
+
 /**
  * Conecta ao endpoint SSE de kickstart e itera sobre os eventos (Story 7.1).
  *
@@ -87,52 +153,12 @@ export async function streamKickstart(
     return
   }
 
-  const reader = res.body?.getReader()
-  if (!reader) return
-
-  const decoder = new TextDecoder()
-  let buffer = ''
-
-  try {
-    while (true) {
-      const { done, value } = await reader.read()
-      if (done) break
-
-      buffer += decoder.decode(value, { stream: true })
-      const events = buffer.split('\n\n')
-      buffer = events.pop() ?? ''
-
-      for (const block of events) {
-        if (!block.trim()) continue
-
-        let eventType = 'message'
-        const dataLines: string[] = []
-
-        for (const line of block.split('\n')) {
-          if (line.startsWith('event: ')) {
-            eventType = line.slice(7)
-          } else if (line.startsWith('data: ')) {
-            dataLines.push(line.slice(6))
-          } else if (line.startsWith('data:')) {
-            // Per SSE spec, "data:" without space is also valid
-            dataLines.push(line.slice(5))
-          }
-        }
-
-        if (dataLines.length > 0) {
-          const data = dataLines.join('\n')
-          try {
-            const parsed = JSON.parse(data)
-            onEvent({ type: eventType as SSEEvent['type'], data: parsed })
-          } catch {
-            // Skip malformed JSON
-          }
-        }
-      }
-    }
-  } finally {
-    reader.releaseLock()
+  if (!res.body) {
+    emitNoBodyError(onEvent)
+    return
   }
+
+  await parseSseStream(res.body, onEvent)
 }
 
 /**
@@ -186,52 +212,12 @@ export async function streamReturnGreeting(
     return
   }
 
-  const reader = res.body?.getReader()
-  if (!reader) return
-
-  const decoder = new TextDecoder()
-  let buffer = ''
-
-  try {
-    while (true) {
-      const { done, value } = await reader.read()
-      if (done) break
-
-      buffer += decoder.decode(value, { stream: true })
-      const events = buffer.split('\n\n')
-      buffer = events.pop() ?? ''
-
-      for (const block of events) {
-        if (!block.trim()) continue
-
-        let eventType = 'message'
-        const dataLines: string[] = []
-
-        for (const line of block.split('\n')) {
-          if (line.startsWith('event: ')) {
-            eventType = line.slice(7)
-          } else if (line.startsWith('data: ')) {
-            dataLines.push(line.slice(6))
-          } else if (line.startsWith('data:')) {
-            // Per SSE spec, "data:" without space is also valid
-            dataLines.push(line.slice(5))
-          }
-        }
-
-        if (dataLines.length > 0) {
-          const data = dataLines.join('\n')
-          try {
-            const parsed = JSON.parse(data)
-            onEvent({ type: eventType as SSEEvent['type'], data: parsed })
-          } catch {
-            // Skip malformed JSON
-          }
-        }
-      }
-    }
-  } finally {
-    reader.releaseLock()
+  if (!res.body) {
+    emitNoBodyError(onEvent)
+    return
   }
+
+  await parseSseStream(res.body, onEvent)
 }
 
 /**
@@ -296,52 +282,10 @@ export async function streamElicit(
     return
   }
 
-  const reader = res.body?.getReader()
-  if (!reader) return
-
-  const decoder = new TextDecoder()
-  let buffer = ''
-
-  try {
-    while (true) {
-      const { done, value } = await reader.read()
-      if (done) break
-
-      buffer += decoder.decode(value, { stream: true })
-
-      // Parse SSE events from buffer
-      const events = buffer.split('\n\n')
-      buffer = events.pop() ?? '' // Keep incomplete event in buffer
-
-      for (const block of events) {
-        if (!block.trim()) continue
-
-        let eventType = 'message'
-        const dataLines: string[] = []
-
-        for (const line of block.split('\n')) {
-          if (line.startsWith('event: ')) {
-            eventType = line.slice(7)
-          } else if (line.startsWith('data: ')) {
-            dataLines.push(line.slice(6))
-          } else if (line.startsWith('data:')) {
-            // Per SSE spec, "data:" without space is also valid
-            dataLines.push(line.slice(5))
-          }
-        }
-
-        if (dataLines.length > 0) {
-          const data = dataLines.join('\n')
-          try {
-            const parsed = JSON.parse(data)
-            onEvent({ type: eventType as SSEEvent['type'], data: parsed })
-          } catch {
-            console.warn(`[SSE] Malformed JSON in event "${eventType}", data length: ${data.length}`)
-          }
-        }
-      }
-    }
-  } finally {
-    reader.releaseLock()
+  if (!res.body) {
+    emitNoBodyError(onEvent)
+    return
   }
+
+  await parseSseStream(res.body, onEvent)
 }
