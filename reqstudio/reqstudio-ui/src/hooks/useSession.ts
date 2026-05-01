@@ -100,8 +100,8 @@ export function useSession({ sessionId }: UseSessionOptions) {
     window.sessionStorage.removeItem(storageKey)
 
     if (session?.status === 'active') {
-      await sessionsApi.updateStatus(sessionId, 'paused').catch(() => {
-        // best effort; não bloquear UX por falha de persistência no pause
+      await sessionsApi.updateStatus(sessionId, 'paused').catch((err) => {
+        console.warn('[useSession] Failed to pause on inactivity timeout:', sessionId, err)
       })
       queryClient.invalidateQueries({ queryKey: ['session', sessionId] })
     }
@@ -159,7 +159,10 @@ export function useSession({ sessionId }: UseSessionOptions) {
         setIsKickstarting(false)
         queryClient.invalidateQueries({ queryKey: ['messages', sessionId] })
       }
-    }, abortCtrl.signal).catch(() => {
+    }, abortCtrl.signal).catch((err) => {
+      if ((err as Error).name !== 'AbortError') {
+        console.warn('[useSession] Kickstart stream failed:', sessionId, err)
+      }
       setStreamingMessage(null)
       setIsKickstarting(false)
     })
@@ -209,11 +212,16 @@ export function useSession({ sessionId }: UseSessionOptions) {
         // Fallback silencioso: resume via API REST
         setStreamingMessage(null)
         setIsReturning(false)
-        sessionsApi.updateStatus(sessionId, 'active').catch(() => {})
+        sessionsApi.updateStatus(sessionId, 'active').catch((err) => {
+          console.warn('[useSession] Failed to resume after return-greeting error:', sessionId, err)
+        })
         queryClient.invalidateQueries({ queryKey: ['messages', sessionId] })
         queryClient.invalidateQueries({ queryKey: ['session', sessionId] })
       }
-    }, abortCtrl.signal).catch(() => {
+    }, abortCtrl.signal).catch((err) => {
+      if ((err as Error).name !== 'AbortError') {
+        console.warn('[useSession] Return greeting stream failed:', sessionId, err)
+      }
       setStreamingMessage(null)
       setIsReturning(false)
     })
@@ -231,7 +239,9 @@ export function useSession({ sessionId }: UseSessionOptions) {
 
     return () => {
       if (session.status === 'active') {
-        sessionsApi.updateStatus(sessionId, 'paused').catch(() => {})
+        sessionsApi.updateStatus(sessionId, 'paused').catch((err) => {
+          console.warn('[useSession] Failed to pause session on unmount:', sessionId, err)
+        })
       }
     }
   }, [sessionId, session?.status, session, sessionTimedOut])
@@ -380,8 +390,16 @@ export function useSession({ sessionId }: UseSessionOptions) {
   // ── Pause (manual) ──
   const pause = useCallback(async () => {
     if (!sessionId || session?.status !== 'active') return
-    await sessionsApi.updateStatus(sessionId, 'paused')
-    queryClient.invalidateQueries({ queryKey: ['session', sessionId] })
+    try {
+      await sessionsApi.updateStatus(sessionId, 'paused')
+      queryClient.invalidateQueries({ queryKey: ['session', sessionId] })
+    } catch (err) {
+      console.error('[useSession] Failed to pause session:', sessionId, err)
+      setError({
+        code: 'PAUSE_ERROR',
+        message: 'Não foi possível pausar a sessão. Tente novamente.',
+      })
+    }
   }, [sessionId, session?.status, queryClient])
 
   return {

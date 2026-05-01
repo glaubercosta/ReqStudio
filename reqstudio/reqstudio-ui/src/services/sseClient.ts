@@ -336,7 +336,7 @@ export async function streamElicit(
             const parsed = JSON.parse(data)
             onEvent({ type: eventType as SSEEvent['type'], data: parsed })
           } catch {
-            // Skip malformed JSON
+            console.warn(`[SSE] Malformed JSON in event "${eventType}", data length: ${data.length}`)
           }
         }
       }

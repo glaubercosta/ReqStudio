@@ -96,11 +96,39 @@ export async function request<T>(
     )
   }
 
-  const body = await res.json()
-  if (!res.ok) {
-    throw new ReqStudioApiError(body.error, res.status)
+  let body: Record<string, unknown>
+  try {
+    body = await res.json()
+  } catch {
+    if (res.ok) {
+      // 204 No Content or other successful responses with no body
+      return {} as T
+    }
+    throw new ReqStudioApiError(
+      {
+        code: 'NETWORK_ERROR',
+        message: `Erro de comunicação com o servidor (HTTP ${res.status}).`,
+        help: 'O servidor retornou uma resposta inesperada. Tente novamente em alguns segundos.',
+        actions: [{ label: 'Tentar novamente', action: 'retry' }],
+        severity: 'recoverable',
+      },
+      res.status,
+    )
   }
-  return body
+  if (!res.ok) {
+    const fallback: ApiError = {
+      code: 'UNKNOWN_ERROR',
+      message: `Erro inesperado (HTTP ${res.status}).`,
+      help: 'Tente novamente.',
+      actions: [],
+      severity: 'recoverable',
+    }
+    throw new ReqStudioApiError(
+      { ...fallback, ...(body.error as Partial<ApiError>) },
+      res.status,
+    )
+  }
+  return body as T
 }
 
 // ── Auth endpoints ────────────────────────────────────────────────────────────
