@@ -1,6 +1,6 @@
 # Story 7.3: Greeting de Retorno ao Projeto
 
-Status: review
+Status: done
 
 ## Story
 

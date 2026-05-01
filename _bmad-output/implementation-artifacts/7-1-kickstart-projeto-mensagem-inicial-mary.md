@@ -1,6 +1,6 @@
 # Story 7.1: Kickstart de Projeto — Mensagem Inicial da Mary
 
-Status: review
+Status: done
 
 ## Story
 
