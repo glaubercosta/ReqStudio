@@ -143,7 +143,7 @@ async def upload_document(
             exc_info=True,
             extra={
                 "document_id": doc.id,
-                "filename": filename,
+                "source_filename": filename,
                 "mime_type": mime_type,
                 "size_bytes": len(content),
             },
